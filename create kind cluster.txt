@@ -1,0 +1,53 @@
+kind delete cluster --name postgres
+kind create cluster --name postgres --config kind-config.yaml
+kubectl get nodes
+podman exec -it postgres-control-plane mkdir -p /data/grafana
+kubectl apply -f grafana.yaml
+kubectl get pods -n postgres-ns
+kubectl logs -f deployment/grafana -n postgres-ns
+C:\Users\p901vhs\postgress>kubectl logs -f deployment/grafana -n postgres-ns
+GF_PATHS_DATA='/var/lib/grafana' is not writable.
+You may have issues with file permissions, more information here: http://docs.grafana.org/installation/docker/#migrate-to-v51-or-later
+mkdir: can't create directory '/var/lib/grafana/plugins': Permission denied
+
+podman exec -it postgres-control-plane bash
+
+chown -R 10001:0 /data/grafana
+chmod -R 770 /data/grafana
+exit
+
+
+go to grafana and comment 
+
+        volumeMounts:
+        - name: grafana-storage
+          mountPath: /var/lib/grafana
+
+      volumes:
+      - name: grafana-storage
+        persistentVolumeClaim:
+          claimName: grafana-pvc
+
+C:\Users\p901vhs\postgress>kubectl delete deployment grafana -n postgres-ns
+deployment.apps "grafana" deleted
+kubectl apply -f grafana.yaml
+
+kubectl get events  -n postgres-ns
+kubectl get svc -n postgres-ns
+
+kubectl get endpoints grafana -n postgres-ns
+
+kubectl port-forward -n postgres-ns svc/grafana 3000:3000
+
+
+
+http://localhost:32000/login 
+
+
+Troub
+
+kubectl get pvc grafana-pvc -n postgres-ns -o yaml
+
+kubectl get pods -n kube-system
+
+
