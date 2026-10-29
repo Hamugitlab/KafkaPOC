@@ -1,0 +1,737 @@
+Kafa connect 
+podman run -d \
+  --name postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=mydb \
+  -p 5432:5432 \
+  postgres:16
+ 
+
+C:\Users\p901vhs\postgress\Kafka\connect>podman exec -it postgres bash
+root@e3b01e3a9a52:/#
+root@e3b01e3a9a52:/#
+root@e3b01e3a9a52:/#
+root@e3b01e3a9a52:/#
+root@e3b01e3a9a52:/#
+root@e3b01e3a9a52:/# su - postgres
+postgres@e3b01e3a9a52:~$ psql
+psql (18.6 (Debian 18.6-1.pgdg13+2))
+Type "help" for help.
+
+postgres-# \c mydb
+mydb=#
+mydb=# CREATE TABLE customers (
+    id SERIAL PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100),
+    created_at TIMESTAMP DEFAULT now()
+);
+CREATE TABLE
+mydb=# INSERT INTO customers(name,email)
+VALUES
+('John','john@test.com'),
+('Mary','mary@test.com');
+INSERT 0 2
+mydb=# \d
+                List of relations
+ Schema |       Name       |   Type   |  Owner
+--------+------------------+----------+----------
+ public | customers        | table    | postgres
+ public | customers_id_seq | sequence | postgres
+(2 rows)
+mydb=# \d
+
+podman run -d \
+  --name postgres \
+  -e POSTGRES_USER=postgres \
+  -e POSTGRES_PASSWORD=postgres \
+  -e POSTGRES_DB=mydb \
+  -p 5432:5432 \
+  -v postgres-data:/var/lib/postgresql/data \
+  postgres:16
+  
+  
+  C:\Users\p901vhs\postgress>podman exec -it connect bash
+[appuser@connect ~]$
+[appuser@connect ~]$
+[appuser@connect ~]$
+[appuser@connect ~]$ pwd
+/home/appuser
+[appuser@connect ~]$
+
+[appuser@connect ~]$ curl -s http://localhost:8083/connector-plugins | grep Jdbc
+[appuser@connect ~]$ curl -s http://localhost:8083/connector-plugins
+[{"class":"io.confluent.kafka.connect.datagen.DatagenConnector","type":"source","version":"null"},{"class":"org.apache.kafka.connect.mirror.MirrorCheckpointConnector","type":"source","version":"7.6.0-ce"},{"class":"org.apache.kafka.connect.mirror.MirrorHeartbeatConnector","type":"source","version":"7.6.0-ce"},{"class":"org.apache.kafka.connect.mirror.MirrorSourceConnector","type":"source","version":"7.6.0-ce"}][appuser@connect ~]$
+[appuser@connect ~]$ echo $CONNECT_PLUGIN_PATH
+/usr/share/java,/usr/share/confluent-hub-components
+[appuser@connect ~]$
+[appuser@connect ~]$ echo $CONNECT_PLUGIN_PATH
+/usr/share/java,/usr/share/confluent-hub-components
+[appuser@connect ~]$
+
+
+From Windows CMD:
+
+
+C:\Users\p901vhs\postgress\Kafka\connect>podman cp confluentinc-kafka-connect-jdbc-10.9.9 connect:/tmp/
+[appuser@connect confluent-hub-components]$ cp -r /tmp/confluentinc-kafka-connect-jdbc-10.9.9 /usr/share/confluent-hub-components/kafka-connect-jdbc
+[appuser@connect confluent-hub-components]$ ls /usr/share/confluent-hub-components/kafka-connect-jdbc
+confluentinc-kafka-connect-jdbc-10.9.9
+
+
+C:\Users\p901vhs\postgress\Kafka\connect>podman restart connect
+connect
+
+
+appuser@connect ~]$ curl -s http://localhost:8083/connector-plugins
+[{"class":"io.confluent.connect.jdbc.JdbcSinkConnector","type":"sink","version":"10.9.9"},{"class":"io.confluent.connect.jdbc.JdbcSourceConnector","type":"source","version":"10.9.9"},{"class":"io.confluent.kafka.connect.datagen.DatagenConnector","type":"source","version":"null"},{"class":"org.apache.kafka.connect.mirror.MirrorCheckpointConnector","type":"source","version":"7.6.0-ce"},{"class":"org.apache.kafka.connect.mirror.MirrorHeartbeatConnector","type":"source","version":"7.6.0-ce"},{"class":"org.apache.kafka.connect.mirror.MirrorSourceConnector","type":"source","version":"7.6.0-ce"}][appuser@connect ~]$
+
+
+
+
+Verify PostgreSQL driver exists
+
+
+[appuser@connect ~]$ getent hosts postgres
+[appuser@connect ~]$ getent hosts broker
+10.89.2.2       broker.dns.podman
+10.89.2.2       broker.dns.podman
+10.89.2.2       broker.dns.podman
+10.89.2.2       broker.dns.podman
+
+
+
+C:\Users\p901vhs\postgress\Kafka\connect>podman network ls
+NETWORK ID    NAME               DRIVER
+6a6f48c1b233  kind               bridge
+2f259bab93aa  podman             bridge
+c6b4e1d52297  postgress_default  bridge
+978815da1303  sql-grafana-net    bridge
+
+C:\Users\p901vhs\postgress\Kafka\connect>
+
+C:\Users\p901vhs\postgress\Kafka\connect>podman network ls
+NETWORK ID    NAME               DRIVER
+6a6f48c1b233  kind               bridge
+2f259bab93aa  podman             bridge
+c6b4e1d52297  postgress_default  bridge
+978815da1303  sql-grafana-net    bridge
+
+C:\Users\p901vhs\postgress\Kafka\connect>podman network inspect postgress_default
+
+If postgres is on a different network
+
+Connect it to the same network:
+C:\Users\p901vhs\postgress\Kafka\connect>podman network connect postgress_default postgres
+
+C:\Users\p901vhs\postgress\Kafka\connect>
+C:\Users\p901vhs\postgress\Kafka\connect>podman restart postgres
+postgres
+
+C:\Users\p901vhs\postgress\Kafka\connect>podman exec -it connect bash
+[appuser@connect ~]$ getent hosts postgres
+10.89.2.16      postgres.dns.podman
+[appuser@connect ~]$
+
+[appuser@connect ~]$ nc -zv postgres 5432
+Ncat: Version 7.92 ( https://nmap.org/ncat )
+Ncat: Connected to 10.89.2.16:5432.
+Ncat: 0 bytes sent, 0 bytes received in 0.03 seconds.
+[appuser@connect ~]$
+
+cat > postgres-source.json <<'EOF'
+{
+  "name": "postgres-source",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+    "tasks.max": "1",
+    "connection.url": "jdbc:postgresql://postgres:5432/mydb",
+    "connection.user": "postgres",
+    "connection.password": "postgres",
+    "table.whitelist": "customers",
+    "mode": "incrementing",
+    "incrementing.column.name": "id",
+    "topic.prefix": "pg-"
+  }
+}
+EOF
+
+[appuser@connect ~]$ pwd
+/home/appuser
+[appuser@connect ~]$ ls
+postgres-source.json
+[appuser@connect ~]$
+
+Create the connector:
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+  --data @postgres-source.json \
+  http://localhost:8083/connectors
+  
+  
+  [appuser@connect ~]$ curl -X POST \
+>   -H "Content-Type: application/json" \
+>   --data @postgres-source.json \
+>   http://localhost:8083/connectors
+{"name":"postgres-source","config":{"connector.class":"io.confluent.connect.jdbc.JdbcSourceConnector","tasks.max":"1","connection.url":"jdbc:postgresql://postgres:5432/mydb","connection.user":"postgres","connection.password":"postgres","table.whitelist":"customers","mode":"incrementing","incrementing.column.name":"id","topic.prefix":"pg-","name":"postgres-source"},"tasks":[],"type":"source"}[appuser@connect ~]$
+
+
+Option 2: Create directly without a file
+curl -X POST http://localhost:8083/connectors \
+-H "Content-Type: application/json" \
+-d '{
+  "name":"postgres-source",
+  "config":{
+    "connector.class":"io.confluent.connect.jdbc.JdbcSourceConnector",
+    "tasks.max":"1",
+    "connection.url":"jdbc:postgresql://postgres:5432/mydb",
+    "connection.user":"postgres",
+    "connection.password":"postgres",
+    "table.whitelist":"customers",
+    "mode":"incrementing",
+    "incrementing.column.name":"id",
+    "topic.prefix":"pg-"
+  }
+}'
+
+
+curl http://localhost:8083/connectors/postgres-source/status
+
+mydb=# \d
+
+[appuser@connect ~]$ curl http://localhost:8083/connectors/postgres-source/status
+{"name":"postgres-source","connector":{"state":"RUNNING","worker_id":"connect:8083"},"tasks":[{"id":0,"state":"RUNNING","worker_id":"connect:8083"}],"type":"source"}[appuser@connect ~]$ 
+[appuser@connect ~]$ 
+[appuser@connect ~]$ 
+
+
+
+
+PostgreSQL Sink Connector
+
+[appuser@connect ~]$ ls
+postgres-source.json
+[appuser@connect ~]$ cat > postgres-sink.json <<'EOF'
+> {
+>   "name": "postgres-sink",
+>   "config": {
+>     "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+>     "tasks.max": "1",
+> 
+>     "connection.url": "jdbc:postgresql://postgres:5432/mydb",
+>     "connection.user": "postgres",
+>     "connection.password": "postgres",
+> 
+>     "topics": "customer-sink",
+> 
+>     "table.name.format": "customer_sink",
+> 
+>     "auto.create": "false",
+>     "auto.evolve": "false",
+> 
+>     "insert.mode": "upsert",
+>     "pk.mode": "record_value",
+>     "pk.fields": "id",
+> 
+>     "delete.enabled": "false"
+>   }
+> }
+> EOF
+[appuser@connect ~]$ curl -X POST \
+>   -H "Content-Type: application/json" \
+>   --data @postgres-sink.json \
+>   http://localhost:8083/connectors
+{"name":"postgres-sink","config":{"connector.class":"io.confluent.connect.jdbc.JdbcSinkConnector","tasks.max":"1","connection.url":"jdbc:postgresql://postgres:5432/mydb","connection.user":"postgres","connection.password":"postgres","topics":"customer-sink","table.name.format":"customer_sink","auto.create":"false","auto.evolve":"false","insert.mode":"upsert","pk.mode":"record_value","pk.fields":"id","delete.enabled":"false","name":"postgres-sink"},"tasks":[],"type":"sink"}[appuser@connect ~]$ 
+[appuser@connect ~]$ 
+
+
+appuser@connect ~]$ curl http://localhost:8083/connectors/postgres-sink/status
+{"name":"postgres-sink","connector":{"state":"RUNNING","worker_id":"connect:8083"},"tasks":[{"id":0,"state":"RUNNING","worker_id":"connect:8083"}],"type":"sink"}[appuser@connect ~]$ 
+[appuser@connect ~]$ 
+
+
+CREATE TABLE customer_sink (
+    id INTEGER PRIMARY KEY,
+    name VARCHAR(100),
+    email VARCHAR(100)
+);
+
+
+cat > postgres-sink.json <<'EOF'
+{
+  "name": "postgres-sink",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+    "tasks.max": "1",
+    "topics": "customer-sink",
+
+    "connection.url": "jdbc:postgresql://postgres:5432/mydb",
+    "connection.user": "postgres",
+    "connection.password": "postgres",
+
+    "auto.create": "true",
+    "auto.evolve": "true",
+
+    "insert.mode": "insert",
+
+    "pk.mode": "none"
+  }
+}
+EOF
+
+
+
+cat > postgres-sink.json <<'EOF'
+{
+  "name": "postgres-sink",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+    "tasks.max": "1",
+
+    "topics": "customer-sink",
+
+    "connection.url": "jdbc:postgresql://postgres:5432/mydb",
+    "connection.user": "postgres",
+    "connection.password": "postgres",
+
+    "auto.create": "true",
+    "insert.mode": "insert",
+
+    "table.name.format": "customer-sink"
+  }
+}
+EOF
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+  --data @postgres-sink.json \
+  http://localhost:8083/connectors
+  
+ 
+ curl http://localhost:8083/connectors/postgres-sink/status
+ 
+ Show Me the Connector Configuration
+  
+  
+ curl http://localhost:8083/connectors/postgres-sink/config
+ 
+  
+  
+
+
+[appuser@broker ~]$ kafka-console-consumer --bootstrap-server broker:29092   --topic pg-customers --from-beginning
+Johnjohn@test.com�΅�h
+Marymary@test.com�΅�h
+Johnjohn@test.com����h
+Marymary@test.com����h
+
+
+
+  Send Test Data to Kafka
+
+
+[appuser@broker ~]$ kafka-console-consumer --bootstrap-server broker:29092   --topic customer-sink
+^CProcessed a total of 0 messages
+[appuser@broker ~]$ exit
+exit
+PS C:\Users\p901vhs> podman exec -it ksqldb-server bash
+[appuser@ksqldb-server ~]$ show topics;
+bash: show: command not found
+[appuser@ksqldb-server ~]$ ksql
+FIPS Mode: DISABLED (enable.fips=true not found in properties file)
+  -> Using netty-tcnative-boringssl-static (standard)
+Debug Options:
+
+                  ===========================================
+                  =       _              _ ____  ____       =
+                  =      | | _____  __ _| |  _ \| __ )      =
+                  =      | |/ / __|/ _` | | | | |  _ \      =
+                  =      |   <\__ \ (_| | | |_| | |_) |     =
+                  =      |_|\_\___/\__, |_|____/|____/      =
+                  =                   |_|                   =
+                  =        The Database purpose-built       =
+                  =        for stream processing apps       =
+                  ===========================================
+
+Copyright 2017-2022 Confluent Inc.
+
+CLI v8.2.0, Server v8.2.0 located at http://localhost:8088
+Server Status: RUNNING
+
+Having trouble? Type 'help' (case-insensitive) for a rundown of how things work!
+
+ksql>
+
+ksql> show topics;
+
+
+CREATE STREAM pg_customers_stream (
+    id INT,
+    name VARCHAR,
+    email VARCHAR
+) WITH (
+    KAFKA_TOPIC='pg-customers',
+    VALUE_FORMAT='JSON'
+);
+
+Before creating it, you can inspect the topic:
+
+SQL
+
+ksql> PRINT 'pg-customers' FROM BEGINNING;
+Key format: ¯\_(ツ)_/¯ - no data processed
+Value format: AVRO
+rowtime: 2026/10/27 20:15:37.467 Z, key: <null>, value: {"id": 1, "name": "John", "email": "john@test.com", "created_at": 1793132114846}, partition: 0
+rowtime: 2026/10/27 20:15:37.476 Z, key: <null>, value: {"id": 2, "name": "Mary", "email": "mary@test.com", "created_at": 1793132114846}, partition: 0
+rowtime: 2026/10/27 20:18:07.489 Z, key: <null>, value: {"id": 3, "name": "John", "email": "john@test.com", "created_at": 1793132281904}, partition: 0
+
+
+
+Then query the stream:
+
+SELECT * FROM pg_customers_stream EMIT CHANGES;
+DESCRIBE TOPIC 'pg-customers';
+
+
+CREATE STREAM customers_sink
+WITH (
+    KAFKA_TOPIC='customers_sink',
+    VALUE_FORMAT='JSON',
+    PARTITIONS=1
+) AS
+SELECT
+    id,
+    name,
+    email
+FROM pg_customers_stream
+EMIT CHANGES;
+ksql> SELECT * FROM customers_sink EMIT CHANGES;
++-------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------+
+|ID                                                                                         |NAME                                                                                       |EMAIL                                                                                      |
++-------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------+
+
+
+If your source topic is AVRO (likely if it came from a JDBC Source Connector), use:
+CREATE STREAM pg_customers_stream
+WITH (
+    KAFKA_TOPIC='pg_customers',
+    VALUE_FORMAT='AVRO'
+);
+
+CREATE STREAM pg_customers_stream
+WITH (
+    KAFKA_TOPIC='pg_customers',
+    VALUE_FORMAT='AVRO'
+);
+
+SHOW TOPICS;
+SHOW STREAMS;
+
+
+If they look like binary/garbage characters, the connector is producing Avro, and you should create the stream with: 
+CREATE STREAM pg_customers_stream (
+    id INT,
+    name VARCHAR,
+    email VARCHAR
+) WITH (
+    KAFKA_TOPIC='pg-customers',
+    VALUE_FORMAT='AVRO'
+);
+
+ksql> SELECT * FROM pg_customers_stream ;
++-------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------+
+|ID                                                                                         |NAME                                                                                       |EMAIL                                                                                      |
++-------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------+
+|1                                                                                          |John                                                                                       |john@test.com                                                                              |
+|2                                                                                          |Mary                                                                                       |mary@test.com                                                                              |
+|3                                                                                          |John                                                                                       |john@test.com                                                                              |
+|4                                                                                          |Mary                                                                                       |mary@test.com                                                                              |
+|5                                                                                          |John                                                                                       |john@test.com                                                                              |
+|6                                                                                          |Mary                                                                                       |mary@test.com                                                                              |
+|7                                                                                          |John                                                                                       |john@test.com                                                                              |
+|8                                                                                          |Mary                                                                                       |mary@test.com                                                                              |
+Query Completed
+Query terminated
+ksql>
+
+ksql> DESCRIBE pg_customers_stream;
+
+Name                 : PG_CUSTOMERS_STREAM
+ Field | Type
+-------------------------
+ ID    | INTEGER
+ NAME  | VARCHAR(STRING)
+ EMAIL | VARCHAR(STRING)
+-------------------------
+For runtime statistics and query details run: DESCRIBE <Stream,Table> EXTENDED;
+ksql>
+
+
+CREATE STREAM customers_sink
+WITH (
+    KAFKA_TOPIC='customers_sink',
+    VALUE_FORMAT='AVRO',
+    PARTITIONS=1
+) AS
+SELECT
+    id,
+    name,
+    email
+FROM pg_customers_stream
+
+
+cat > postgres-sink.json <<'EOF'
+{
+  "name": "postgres-sink",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+    "tasks.max": "1",
+
+    "topics": "pg-customers",
+
+    "connection.url": "jdbc:postgresql://postgres:5432/mydb",
+    "connection.user": "postgres",
+    "connection.password": "postgres",
+    "auto.create": "true",
+    "auto.evolve": "true",
+    "insert.mode": "insert",
+
+    "table.name.format": "customer_sink"
+  }
+}
+EOF
+
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+  --data @postgres-sink.json \
+  http://localhost:8083/connectors
+  
+  curl http://localhost:8083/connectors/postgres-sink/status
+  
+  
+  thiswill create table "table.name.format": "customer_sink" on prosgress 
+  
+  
+  
+ cat > sqlserver-sink.json <<'EOF' 
+{
+  "name": "sqlserver-sink",
+  "config": {
+    "name": "sqlserver-sink",
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+    "tasks.max": "1",
+    "topics": "pg-customers",
+    "connection.url": "jdbc:sqlserver://him-mssql_01:1433;databaseName=himtestdb;encrypt=false;trustServerCertificate=true",
+    "connection.user": "sa",
+    "connection.password": "*********",
+    "insert.mode": "insert",
+    "table.name.format": "customer_sink",
+    "pk.mode": "none",
+    "pk.fields": "",
+    "auto.create": "true",
+    "auto.evolve": "true"
+  }
+}
+EOF
+
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+  --data @sqlserver-sink.json \
+  http://localhost:8083/connectors
+  
+  curl http://localhost:8083/connectors/sqlserver-sink/status
+  
+  
+  PS C:\Users\p901vhs> podman network connect postgress_default him-mssql_01
+PS C:\Users\p901vhs>
+PS C:\Users\p901vhs>
+PS C:\Users\p901vhs>
+PS C:\Users\p901vhs> podman restart him-mssql_01
+him-mssql_01
+PS C:\Users\p901vhs> podman exec -it connect bash
+[appuser@connect ~]$
+[appuser@connect ~]$
+[appuser@connect ~]$ getent hosts postgres
+10.89.2.16      postgres.dns.podman
+[appuser@connect ~]$ getent hosts him-mssql_01
+10.89.2.18      him-mssql_01.dns.podman
+10.89.2.18      him-mssql_01.dns.podman
+[appuser@connect ~]$
+
+
+First, inspect the message
+In ksqlDB:
+
+SET 'auto.offset.reset'='earliest';
+
+SELECT * 
+FROM PG_CUSTOMERS_STREAM
+EMIT CHANGES
+LIMIT 5;
+
+
+
+Full Schema 
+If you want a JDBC Source Connector that reads all tables from a PostgreSQL schema, you don't need table.whitelist.
+
+Example connector:
+
+podman run -d   --name postgres-debezium   -e POSTGRES_USER=postgres   -e POSTGRES_PASSWORD=postgres   -e POSTGRES_DB=mydb   -p 5432:5432   docker.io/debezium/postgres:17
+
+
+Install Debezium (for CDC)
+
+curl http://localhost:8083/connector-plugins | grep PostgresConnector
+
+
+confluent-hub install --no-prompt debezium/debezium-connector-postgresql:latest
+
+
+[appuser@connect ~]$ confluent-hub install --no-prompt debezium/debezium-connector-postgresql:latest
+Running in a "--no-prompt" mode
+Implicit acceptance of the license below:
+Apache 2.0
+https://github.com/debezium/debezium/blob/master/LICENSE.txt
+Implicit confirmation of the question: You are about to install 'debezium-connector-postgresql' from Confluent, as published on Confluent Hub.
+Downloading component Debezium PostgreSQL CDC Connector 3.2.6-4, provided by Confluent from Confluent Hub and installing into /usr/share/confluent-hub-components
+Adding installation directory to plugin path in the following files:
+  /etc/kafka/connect-distributed.properties
+  /etc/kafka/connect-standalone.properties
+  /etc/schema-registry/connect-avro-distributed.properties
+  /etc/schema-registry/connect-avro-standalone.properties
+  /etc/kafka-connect/kafka-connect.properties
+
+Completed
+
+
+mkdir -p /usr/share/confluent-hub-components/debezium
+[appuser@connect lib]$ cp * /usr/share/confluent-hub-components/debezium/
+[appuser@connect lib]$ ls /usr/share/confluent-hub-components/debezium/
+debezium-api-3.2.6-4.jar  debezium-common-3.2.6-4.jar  debezium-connector-postgres-3.2.6-4.jar  debezium-core-3.2.6-4.jar  debezium-openlineage-api-3.2.6-4.jar  postgresql-42.7.12.jar  protobuf-java-3.25.5.jar
+[app
+
+
+[appuser@connect ~]$ confluent-hub install --no-prompt confluentinc/kafka-connect-jdbc:10.9.9
+
+podman restart connect
+
+
+
+
+podman exec -it postgres psql -U postgres -d mydb
+
+SHOW wal_level;
+CREATE PUBLICATION dbz_publication FOR ALL TABLES;
+
+CREATE USER debezium WITH PASSWORD 'debezium';
+
+GRANT CONNECT ON DATABASE mydb TO debezium;
+GRANT USAGE ON SCHEMA public TO debezium;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO debezium;
+
+
+sqlcmd -S localhost -U sa -P "hello@123" -C
+CREATE DATABASE himtestdb;
+GO
+
+
+
+
+
+
+
+
+
+
+
+worked when use the connectimage  image: docker.io/debezium/connect:2.7.3.Final
+Install JDBC Sink into Debezium Connect
+
+Inside the connect container:
+
+Shell
+cd /kafka/connect
+
+Download and install the JDBC connector:
+
+Shell
+curl -L -o jdbc.zip \
+https://api.hub.confluent.io/api/plugins/confluentinc/kafka-connect-jdbc/versions/10.9.9/archive
+Shell
+unzip jdbc.zip
+
+
+
+Install the PostgreSQL connector
+
+
+curl -L -o /tmp/postgres.tar.gz \
+https://repo1.maven.org/maven2/io/debezium/debezium-connector-postgres/3.2.6.Final/debezium-connector-postgres-3.2.6.Final-plugin.tar.gz
+
+cd /tmp
+
+tar -xzf postgres.tar.gz
+
+cp -r debezium-debezium-connector-postgresql \
+  /kafka/connect/
+  
+  
+  podman restart connect
+  
+  curl -s http://localhost:8083/connector-plugins
+  
+  
+  [kafka@connect ~]$ curl -s http://localhost:8083/connector-plugins
+[{"class":"io.confluent.connect.jdbc.JdbcSinkConnector","type":"sink","version":"10.9.9"},{"class":"io.confluent.connect.jdbc.JdbcSourceConnector","type":"source","version":"10.9.9"},{"class":"io.debezium.connector.postgresql.PostgresConnector","type":"source","version":"3.2.6.Final"},{"class":"org.apache.kafka.connect.mirror.MirrorCheckpointConnector","type":"source","version":"3.7.0"},{"class":"org.apache.kafka.connect.mirror.MirrorHeartbeatConnector","type":"source","version":"3.7.0"},{"class":"org.apache.kafka.connect.mirror.MirrorSourceConnector","type":"source","version":"3.7.0"}][kafka@connect ~]$
+[kafka@connect ~]$
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+podman network connect postgress_default postgres-debezium 
+
+podman run -d `
+--name connect-debezium `
+--network postgress_default `
+-p 8084:8083 `
+-e BOOTSTRAP_SERVERS=broker:29092 `
+-e GROUP_ID=debezium-connect `
+-e CONFIG_STORAGE_TOPIC=debezium_configs `
+-e OFFSET_STORAGE_TOPIC=debezium_offsets `
+-e STATUS_STORAGE_TOPIC=debezium_status `
+-e KEY_CONVERTER=org.apache.kafka.connect.json.JsonConverter `
+-e VALUE_CONVERTER=org.apache.kafka.connect.json.JsonConverter `
+-e KEY_CONVERTER_SCHEMAS_ENABLE=false `
+-e VALUE_CONVERTER_SCHEMAS_ENABLE=false `
+docker.io/debezium/connect:2.7.3.Final
+
+
+
+podman exec -it connect-debezium bash
+
+getent hosts broker

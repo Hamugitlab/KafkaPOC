@@ -1,0 +1,138 @@
+[appuser@broker ~]$ kafka-topics --bootstrap-server localhost:9092 --list
+__consumer_offsets
+__internal_confluent_only_broker_info
+__transaction_state
+_confluent-alerts
+_confluent-command
+_confluent-controlcenter-2-5-0-1-AlertHistoryStore-changelog
+_confluent-controlcenter-2-5-0-1-AlertHistoryStore-repartition
+_confluent-ksql-default__command_topic
+_confluent-telemetry-metrics
+_confluent_balancer_api_state
+default_ksql_processing_log
+docker-connect-configs
+docker-connect-offsets
+docker-connect-status
+[appuser@broker ~]$ kafka-topics --bootstrap-server localhost:9092 --create --topic vehicle-positions
+Created topic vehicle-positions.
+[appuser@broker ~]$ kafka-topics --bootstrap-server localhost:9092 --list
+__consumer_offsets
+__internal_confluent_only_broker_info
+__transaction_state
+_confluent-alerts
+_confluent-command
+_confluent-controlcenter-2-5-0-1-AlertHistoryStore-changelog
+_confluent-controlcenter-2-5-0-1-AlertHistoryStore-repartition
+_confluent-ksql-default__command_topic
+_confluent-telemetry-metrics
+_confluent_balancer_api_state
+default_ksql_processing_log
+docker-connect-configs
+docker-connect-offsets
+docker-connect-status
+vehicle-positions
+
+[appuser@broker ~]$ kafka-topics --bootstrap-server localhost:9092 --describe --topic vehicle-positions
+Topic: vehicle-positions        TopicId: zVFq44U3TSyUWgf97iv-hA PartitionCount: 1       ReplicationFactor: 1    Configs: min.insync.replicas=1
+        Topic: vehicle-positions        Partition: 0    Leader: 1       Replicas: 1     Isr: 1  Offline:        Elr:    LastKnownElr: 
+		
+		
+		[appuser@broker ~]$ kafka-topics --bootstrap-server localhost:9092 --describe --topic vehicle-positions^C
+[appuser@broker ~]$ kafka-console-producer --bootstrap-server localhost:9092 --topic vehicle-positions
+>hello
+>himanshu
+>how are u
+
+
+[appuser@broker ~]$ kafka-console-consumer --bootstrap-server localhost:9092 --topic vehicle-positions  --from-beginning
+hello
+himanshu
+how are u 
+
+[appuser@control-center ~]$ bash -c 'echo > /dev/tcp/broker/29092' && echo OK || echo FAILc 'echo > /dev/tcp/broker/29092' && echo OK || echo FAIL
+OK
+[appuser@control-center ~]$ 
+[appuser@control-center ~]$ 
+[appuser@control-center ~]$ bash -c 'echo > /dev/tcp/broker/29092' && echo OK || echo FAIL
+OK
+[appuser@control-center ~]$ 
+[appuser@control-center ~]$ 
+[appuser@control-center ~]$ 
+[appuser@control-center ~]$ bash -c 'echo > /dev/tcp/broker/9092' && echo OK || echo FAIL
+OK
+[appuser@control-center ~]$ bash -c 'echo > /dev/tcp/broker/9091' && echo OK || echo FAIL
+bash: connect: Connection refused
+bash: line 1: /dev/tcp/broker/9091: Connection refused
+FAIL
+[appuser@control-center ~]$ bash -c 'echo > /dev/tcp/broker/29092' && echo OK || echo FAIL
+OK
+[appuser@control-center ~]$ 
+[appuser@control-center ~]$ 
+[appuser@control-center ~]$ 
+[appuser@control-center ~]$ getent hosts broker
+10.89.2.3       broker.dns.podman
+10.89.2.3       broker.dns.podman
+10.89.2.3       broker.dns.podman
+10.89.2.3       broker.dns.podman
+
+
+
+C:\Users\p901vhs\postgress>podman exec -it broker bash
+[appuser@broker ~]$ kafka-topics --create --if-not-exists --topic usertopic --replication-factor=1 --partitions=3 --bootstrap-server broker:9092
+Created topic usertopic.
+[appuser@broker ~]$
+
+C:\Users\p901vhs\postgress>podman exec -it ksqldb-server bash
+[appuser@ksqldb-server ~]$ ksql
+
+ksql> CREATE STREAM s2 (name VARCHAR, favorite_number INTEGER,favorite_color VARCHAR) WITH (kafka_topic='usertopic', value_format='avro');
+>
+Could not get latest schema for subject usertopic-value
+Caused by: schema-registry
+ksql>
+
+
+podman exec ksqldb-server env | grep SCHEMA
+
+
+
+podman logs ksqldb-server --tail 500 | findstr /i "SCHEMA" 
+
+
+podman exec ksqldb-server curl http://schema-registry:8081/subjects
+
+Test connectivity from ksqlDB to Schema Registry
+
+podman exec ksqldb-server curl http://schema-registry:8081/subjects
+
+
+
+ksql> CREATE STREAM s2 (name VARCHAR, favorite_number INTEGER,favorite_color VARCHAR) WITH (kafka_topic='usertopic', value_format='avro');
+
+ Message
+----------------
+ Stream created
+----------------
+ksql>
+
+
+ksql> select * from s2;
++-------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------+
+|NAME                                                                                       |FAVORITE_NUMBER                                                                            |FAVORITE_COLOR                                                                             |
++-------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------+-------------------------------------------------------------------------------------------+
+Query Completed
+Query termina
+
+
+
+https://www.confluent.co.uk/hub/confluentinc/kafka-connect-jdbc
+
+
+https://binadit.com/tutorials/configure-kafka-connect-for-database-integration
+
+cd $CONFLUENT_HOME/share/java/kafka-connect-jdbc
+wget https://jdbc.postgresql.org/download/postgresql-42.7.1.jar
+wget https://dev.mysql.com/get/Downloads/Connector-J/mysql-connector-j-8.2.0.jar
+wget https://github.com/Microsoft/mssql-jdbc/releases/download/v12.4.2/mssql-jdbc-12.4.2.jre11.jarconfluent-hub install --no-prompt debezium/debezium-connector-postgresql:2.4.0
+confluent-hub install --no-prompt debezium/debezium-connector-mysql:2.4.0
+confluent-hub install --no-prompt debezium/debezium-connector-sqlserver:2.4.0

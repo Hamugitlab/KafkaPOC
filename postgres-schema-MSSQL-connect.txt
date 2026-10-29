@@ -1,0 +1,116 @@
+If you want a JDBC Source Connector that reads all tables from a PostgreSQL schema, you don't need table.whitelist.
+Next step: PostgreSQL → Kafka → SQL Server
+
+PostgreSQL
+    ↓
+JDBC Source Connector
+    ↓
+Kafka Topics (pg_public_*)
+    ↓
+ksqlDB (optional)
+    ↓
+JDBC Sink Connector
+    ↓
+SQL Server
+
+
+
+Example connector:
+
+ cat > postgres-source_Schema.json <<'EOF' 
+{
+  "name": "postgres-source_Schema",
+  "config": {
+    "name": "postgres-source_Schema",
+    "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+    "tasks.max": "1",
+    "connection.url": "jdbc:postgresql://postgres:5432/mydb",
+    "connection.user": "postgres",
+    "connection.password": "********",
+    "schema.pattern": "public",
+    "mode": "incrementing",
+    "incrementing.column.name": "id",
+    "timestamp.column.name": "",
+    "poll.interval.ms": "5000",
+    "topic.prefix": "pg_public_"
+  }
+}
+EOF
+
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+  --data @postgres-source_Schema.json \
+  http://localhost:8083/connectors
+  
+  curl http://localhost:8083/connectors/postgres-source_Schema/status
+  
+  
+ 
+ sink 
+ 
+
+
+cat > sqlserver-sink_schema.json <<'EOF'
+{
+  "name": "sqlserver-sink_schema",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+    "tasks.max": "1",
+    "topics.regex": "pg_public_.*",
+
+    "connection.url": "jdbc:sqlserver://him-mssql_01:1433;databaseName=himtestdb;encrypt=false;trustServerCertificate=true",
+    "connection.user": "sa",
+    "connection.password": "hello@123",
+
+    "pk.mode": "none",
+    "insert.mode": "insert",
+
+    "auto.create": "true",
+    "auto.evolve": "true"
+  }
+}
+EOF
+
+
+
+curl -X POST \
+  -H "Content-Type: application/json" \
+  --data @sqlserver-sink_schema.json \
+  http://localhost:8083/connectors
+  
+  curl http://localhost:8083/connectors/sqlserver-sink_schema/status
+  
+  
+[appuser@connect ~]$  curl http://localhost:8083/connectors/postgres-source_Schema/status
+{"name":"postgres-source_Schema","connector":{"state":"RUNNING","worker_id":"connect:8083"},"tasks":[{"id":0,"state":"FAILED","worker_id":"connect:8083","trace":"org.apache.kafka.common.config.ConfigException: Timestamp columns: updated_at do not exist in table '\"public\".\"customer_sink\"'\n\tat io.confluent.connect.jdbc.source.JdbcSourceTask.validateColumnsExist(JdbcSourceTask.java:430)\n\tat io.confluent.connect.jdbc.source.JdbcSourceTask.start(JdbcSourceTask.java:231)\n\tat org.apache.kafka.connect.runtime.AbstractWorkerSourceTask.initializeAndStart(AbstractWorkerSourceTask.java:283)\n\tat org.apache.kafka.connect.runtime.WorkerTask.doRun(WorkerTask.java:227)\n\tat org.apache.kafka.connect.runtime.WorkerTask.run(WorkerTask.java:284)\n\tat org.apache.kafka.connect.runtime.AbstractWorkerSourceTask.run(AbstractWorkerSourceTask.java:80)\n\tat org.apache.kafka.connect.runtime.isolation.Plugins.lambda$withClassLoader$1(Plugins.java:237)\n\tat java.base/java.util.concurrent.Executors$RunnableAdapter.call(Executors.java:515)\n\tat java.base/java.util.concurrent.FutureTask.run(FutureTask.java:264)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor.runWorker(ThreadPoolExecutor.java:1128)\n\tat java.base/java.util.concurrent.ThreadPoolExecutor$Worker.run(ThreadPoolExecutor.java:628)\n\tat java.base/java.lang.Thread.run(Thread.java:829)\n"}],"type":"source"}[appuser@connect ~]$
+
+
+after adding the tables in prosgtee user tables
+
+
+cat > postgres-source_Schema.json <<'EOF'
+{
+  "name": "postgres-source_Schema",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSourceConnector",
+    "tasks.max": "1",
+    "connection.url": "jdbc:postgresql://postgres:5432/mydb",
+    "connection.user": "postgres",
+    "connection.password": "postgres",
+    "schema.pattern": "public",
+    "mode": "incrementing",
+    "incrementing.column.name": "id",
+    "poll.interval.ms": "5000",
+    "topic.prefix": "pg_public_"
+  }
+}
+EOF
+
+
+https://hub.docker.com/r/debezium/connect-base
+
+https://hub.docker.com/u/debezium
+
+debezium connector 
+docker pull debezium/connect-base:2.7.3.Final
