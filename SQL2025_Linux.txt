@@ -1,0 +1,74 @@
+
+https://learn.microsoft.com/en-us/sql/linux/install-upgrade/quickstart-install-docker?view=sql-server-ver17&tabs=cli&pivots=cs1-bash
+https://learn.microsoft.com/en-us/sql/linux/install-upgrade/quickstart-containers-azure?view=sql-server-ver17&tabs=kubectl
+podman pull mcr.microsoft.com/mssql/server:2025-latest
+
+
+podman exec -it postgres-control-plane mkdir -p /data/mssql02
+
+kubectl apply -f sqldeployment.yaml
+
+C:\Users\p901vhs\postgress>kubectl logs -f deployment/mssql -n postgres-ns
+
+SQL Server 2025 will run as non-root by default.
+This container is running as user mssql.
+To learn more visit https://go.microsoft.com/fwlink/?linkid=2099216.
+/opt/mssql/bin/sqlservr: Error: The system directory [/.system] could not be created. File: /mnt/vss/_work/1/s/sqlpal/Hosts/Linux/LinuxDirectory.cpp:420 [Status: 0xC0000022 Access denied errno = 0xD(13) Permission denied]
+
+podman exec -it postgres-control-plane bash
+mkdir -p /data/mssql02
+chown -R 10001:0 /data/mssql02
+chmod -R 770 /data/mssql02
+exit
+
+Check Current Pod Error
+
+kubectl describe pod -n postgres-ns -l app=mssql
+
+kubectl delete deployment/mssql -n postgres-ns
+kubectl apply -f sqldeployment.yaml
+
+kubectl get pods -n postgres-ns
+kubectl get pvc -n postgres-ns
+     
+
+kubectl port-forward -n postgres-ns svc/mssql 1434:1433
+
+Connect from SSMS
+
+Server: localhost,30432
+Login : sa
+Password : P@ssw0rd123456
+
+Check SQL Server Logs
+
+kubectl logs -f deployment/mssql -n postgres-ns
+Execute SQL Inside Container
+
+kubectl exec -it deployment/mssql -n postgres-ns -- /opt/mssql-tools18/bin/sqlcmd -S localhost -U sa -P "P@ssw0rd123456" -
+
+
+kubectl rollout restart deployment/mssql -n postgres-ns
+
+Enable SQL Server Agent
+
+Open a terminal on your Linux machine.
+
+Run the following command to enable SQL Server Agent:
+
+sudo /opt/mssql/bin/mssql-conf set sqlagent.enabled true
+Copy
+Restart the SQL Server service:
+
+sudo systemctl restart mssql-server
+>kubectl describe pod -n postgres-ns -l app=mssql02
+
+systemctl restart mssql-server.service
+
+mssql@him-mssql_01:/$ /opt/mssql/bin/mssql-conf set sqlagent.enabled true
+Warning: could not create log file for mssql-conf at /var/opt/mssql/log/mssql-conf/mssql-conf.log.
+SQL Server needs to be restarted in order to apply this setting. Please run
+'systemctl restart mssql-server.service'.
+Note that sp_reload_mssqlconf can be used to apply a limited subset of settings without restarting the service.
+mssql@him-mssql_01:/$ systemctl restart mssql-server.service
+bash: systemctl: command not found

@@ -1,0 +1,99 @@
+---
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: postgres-ns
+
+---
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: mssql-pv02
+spec:
+  capacity:
+    storage: 20Gi
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: manual
+  persistentVolumeReclaimPolicy: Retain
+  hostPath:
+    path: /data/mssql02
+
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mssql-pvc02
+  namespace: postgres-ns
+spec:
+  storageClassName: manual
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 20Gi
+
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mssql02
+  namespace: postgres-ns
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mssql02
+  template:
+    metadata:
+      labels:
+        app: mssql02
+    spec:
+      containers:
+      - name: mssql
+        image: mcr.microsoft.com/mssql/server:2025-latest
+
+        ports:
+        - containerPort: 1433
+
+        env:
+        - name: ACCEPT_EULA
+          value: "Y"
+
+        - name: MSSQL_SA_PASSWORD
+          value: "P@ssw0rd123456"
+
+        - name: MSSQL_PID
+          value: "Developer"
+
+        resources:
+          requests:
+            cpu: "2"
+            memory: "4Gi"
+          limits:
+            cpu: "4"
+            memory: "8Gi"
+
+        volumeMounts:
+        - name: mssql-data
+          mountPath: /var/opt/mssql
+
+      volumes:
+      - name: mssql-data
+        persistentVolumeClaim:
+          claimName: mssql-pvc02
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mssql02
+  namespace: postgres-ns
+spec:
+  type: NodePort
+  selector:
+    app: mssql02
+  ports:
+  - port: 1433
+    targetPort: 1433
+    nodePort: 30433
