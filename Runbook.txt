@@ -1,0 +1,434 @@
+\\fspa.myntet.se\fileroot\IT-Gem\IT Service\PSPPP\PG018 DB-teknik\MSSQL\Script         \\nas-se07-mz.fspa.myntet.se\fs70308\MSSQL\Script
+
+
+"\\spnt190.fspa.myntet.se\AllmdataIT\IT Service\PSPPP\PG018 DB-teknik\MSSQL"         "\\nas-se07-mz.fspa.myntet.se\fs70308\MSSQL" `
+"\\fspas01fs011\inst$\_G018 SQL\Inst"                                                "\\nas-se07-mz.fspa.myntet.se\fs70308\Inst" 
+
+\\fspa.myntet.se\fileroot\IT-Gem\IT Service\PSPPP\PG018 DB-teknik\MSSQL\Script
+
+
+Initialization failed. Please check the error below and try again
+Error: Command execution failed with exit code 125
+Command execution failed with exit code 125
+Error: podman-machine-default: VM already exists
+
+podman run -d --name postgres   -e POSTGRES_PASSWORD=mypassword   -e POSTGRES_DB=postgres   -p 5432:5432   -v pgdata:/var/lib/postgresql/data   postgres:latest
+  
+  
+  
+  
+podman run -d --name postgres \
+  -e POSTGRES_PASSWORD=mypassword \
+  -e POSTGRES_DB=myapp \
+  -p 5432:5432 \
+  -v pgdata:/var/lib/postgresql/data \
+  postgres
+  
+  
+  
+version: "3"
+volumes:
+  data:
+  export:
+services:
+  postgres-sql-eval:
+    image: docker.io/postgres:14-alpine
+    container_name: postgres-sql-eval
+    ports:
+      - 5432:5432
+    environment:
+      - POSTGRES_PASSWORD=postgres
+    volumes:
+      - data:/var/lib/postgresql/data 
+      - export:/export
+
+
+
+ docker run --name some-postgres -e POSTGRES_PASSWORD=mysecretpassword -d postgres
+ 
+ 
+ 
+ 
+apiVersion: v1
+kind: Pod
+metadata:
+  name: postgres-pod
+  labels:
+    app: postgres
+spec:
+  containers:
+    - name: postgres
+      image: docker.io/library/postgres:16
+      ports:
+        - containerPort: 5432
+      env:
+        - name: POSTGRES_USER
+          value: "myuser"
+        - name: POSTGRES_PASSWORD
+          value: "mypassword"
+        - name: POSTGRES_DB
+          value: "mydb"
+      volumeMounts:
+        - name: postgres-storage
+          mountPath: /var/lib/postgresql/data
+  volumes:
+    - name: postgres-storage
+      emptyDir: {}
+
+
+
+
+
+C:\Users\p901vhs\postgress>kubectl create namespace  him-postgres
+namespace/him-postgres created
+
+
+kubectl apply -f postgres-pv.yaml
+kubectl get pv
+
+
+kubectl apply -f postgres-pvc.yaml
+
+kubectl get pvc -n him-postgres
+
+
+
+kubectl apply -f postgres-deployment.yaml
+
+
+kubectl apply -f postgres-service.yaml
+
+
+
+
+kubectl get all -n him-postgres
+
+
+Connect to PostgreSQL
+
+
+kubectl get pods -n him-postgres
+
+
+C:\Users\p901vhs\postgress>kubectl exec -it -n him-postgres postgres-667c576fc7-zlct2 -- psql -U postgres
+psql (16.15 (Debian 16.15-1.pgdg13+2))
+Type "help" for help.
+
+postgres=# \l
+                                                      List of databases
+   Name    |  Owner   | Encoding | Locale Provider |  Collate   |   Ctype    | ICU Locale | ICU Rules |   Access privileges
+-----------+----------+----------+-----------------+------------+------------+------------+-----------+-----------------------
+ himdb     | postgres | UTF8     | libc            | en_US.utf8 | en_US.utf8 |            |           |
+ postgres  | postgres | UTF8     | libc            | en_US.utf8 | en_US.utf8 |            |           |
+ template0 | postgres | UTF8     | libc            | en_US.utf8 | en_US.utf8 |            |           | =c/postgres          +
+           |          |          |                 |            |            |            |           | postgres=CTc/postgres
+ template1 | postgres | UTF8     | libc            | en_US.utf8 | en_US.utf8 |            |           | =c/postgres          +
+           |          |          |                 |            |            |            |           | postgres=CTc/postgres
+(4 rows)
+
+postgres=#
+
+
+
+
+C:\Users\p901vhs\postgress>kubectl exec -it -n him-postgres postgres-667c576fc7-zlct2  -- bash
+root@postgres-667c576fc7-zlct2:/#
+
+
+postgres@postgres-667c576fc7-zlct2:~$ env
+SHELL=/bin/bash
+PWD=/var/lib/postgresql
+LOGNAME=postgres
+HOME=/var/lib/postgresql
+TERM=xterm
+USER=postgres
+SHLVL=1
+PATH=/usr/local/bin:/usr/bin:/bin:/usr/local/games:/usr/games
+MAIL=/var/mail/postgres
+_=/usr/bin/env
+
+
+postgres@postgres-667c576fc7-zlct2:/usr/lib/postgresql/16/bin$ ./pg_ctl -D /var/lib/postgresql/data stop
+waiting for server to shut down....command terminated with exit code 137
+
+C:\Users\p901vhs\postgress>
+C:\Users\p901vhs\postgress>
+C:\Users\p901vhs\postgress>
+
+
+
+
+kind delete cluster --name postgres
+
+C:\Users\p901vhs\postgress>kind create cluster   --name postgres   --config kind-config.yaml
+enabling experimental podman provider
+Creating cluster "postgres" ...
+ • Ensuring node image (kindest/node:v1.33.1) 🖼  ...
+ ✓ Ensuring node image (kindest/node:v1.33.1) 🖼
+ • Preparing nodes 📦   ...
+ ✓ Preparing nodes 📦
+ • Writing configuration 📜  ...
+ ✓ Writing configuration 📜
+ • Starting control-plane 🕹️  ...
+ ✓ Starting control-plane 🕹️
+ • Installing CNI 🔌  ...
+ ✓ Installing CNI 🔌
+ • Installing StorageClass 💾  ...
+ ✓ Installing StorageClass 💾
+Set kubectl context to "kind-postgres"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-postgres
+
+Not sure what to do next? 😅  Check out https://kind.sigs.k8s.io/docs/user/quick-start/
+
+
+
+C:\Users\p901vhs\postgress>podman ps
+CONTAINER ID  IMAGE                                                                                           COMMAND     CREATED         STATUS            PORTS                                                                          NAMES
+578a41c541a3  docker.io/kindest/node@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f              17 hours ago    Up About an hour  0.0.0.0:9090->80/tcp, 0.0.0.0:9443->443/tcp, 127.0.0.1:49683->6443/tcp         kind-cluster-control-plane
+7c3ce81ad4e2  docker.io/grafana/grafana-enterprise:latest                                                                 17 hours ago    Up 17 hours       0.0.0.0:3000->3000/tcp                                                         grafana
+caba41b0737c  docker.io/kindest/node@sha256:050072256b9a903bd914c0b2866828150cb229cea0efe5892e2b644d5dd3b34f              36 minutes ago  Up 36 minutes     127.0.0.1:62669->6443/tcp, 0.0.0.0:30300->30300/tcp, 0.0.0.0:30432->30432/tcp  postgres-control-plane
+
+C:\Users\p901vhs\postgress>
+
+
+https://learn.microsoft.com/en-us/sql/linux/install-upgrade/quickstart-install-docker?view=sql-server-ver17&tabs=cli&pivots=cs1-bash
+
+podman pull mcr.microsoft.com/mssql/server:2025-latest
+
+
+podman run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=hello@123"    -p 1433:1433 --name him-mssql_01 --hostname him-mssql_01    -d    mcr.microsoft.com/mssql/server:2025-latest
+
+
+podman exec -it him-mssql_01  "bash"
+
+
+mssql@him-mssql_01:/opt/mssql-tools18/bin$ ./sqlcmd -S localhost -U "sa" -P "hello@123" -C
+1>
+
+
+mssql@him-mssql_01:/opt/mssql-tools18/bin$ ./sqlcmd -S localhost -U "sa" -P "hello@123" -C
+1> create database himtestdb;
+2> GO
+1> select name from sys.databases;
+2> GO
+name
+--------------------------------------------------------------------------------------------------------------------------------
+master
+tempdb
+model
+msdb
+himtestdb
+
+(5 rows affected)
+
+
+C:\Users\p901vhs\postgress>podman network create sql-grafana-net
+sql-grafana-net
+
+podman network create sql-grafana-net
+podman network connect sql-grafana-net grafana
+podman network connect sql-grafana-net him-mssql_01
+podman network connect sql-grafana-net him-mssql_02
+
+Go back to your Grafana Data Source settings page.Change the Host field from localhost:1433 to:text       host.docker.internal:1433
+Use code with caution.Keep TLS/SSL Mode set to Skip verify.Click Save & test.
+Open your Grafana UI (http://localhost:3000).Navigate to Dashboards > New (top right) > Import.In the Import via grafana.com text box, paste the new ID:text21378
+Use code with caution.Click Load.On the settings page, look for the dropdown at the bottom and select your Microsoft SQL Server data source.Click Import.
+
+Did ID 21378 load successfully for you, and are you able to see the live dashboard metrics now?
+Dashboard ID: 15488 (SQL Server Multi-Instance Overview)
+
+podman run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=hello@123"    -p 1434:1434 --name him-mssql_02 --hostname him-mssql_02    -d    mcr.microsoft.com/mssql/server:2025-latest
+podman network connect sql-grafana-net him-mssql_02
+
+
+podman network inspect sql-grafana-net
+
+The Fix
+
+
+# 1. Stop and remove the misconfigured container
+podman stop him-mssql_02
+podman rm him-mssql_02
+
+# 2. Re-create it with host port 1434 mapped to internal port 1433
+podman run -e "ACCEPT_EULA=Y" -e "MSSQL_SA_PASSWORD=hello@456"    -p 1434:1433 --name him-mssql_02    --network sql-grafana-net    -d    mcr.microsoft.com/mssql/server:2025-latest
+C:\Users\p901vhs\postgress>podman machine inspect --format "{{.ConnectionInfo.PodmanPipe.Path}}"
+\\.\pipe\podman-machine-default
+
+C:\Users\p901vhs\postgress>podman machine list
+NAME                    VM TYPE     CREATED       LAST UP            CPUS        MEMORY      DISK SIZE
+podman-machine-default  wsl         44 hours ago  Currently running  4           2GiB        100GiB
+
+C:\Users\p901vhs\postgress>
+
+
+
+C:\Users\p901vhs\postgress>curl http://prometheus:9090/api/v1/query
+curl: (6) Could not resolve host: prometheus
+
+
+
+
+
+For Graphana 
+
+podman exec -it postgres-control-plane mkdir -p /data/grafana
+kubectl apply -f grafana.yaml
+kubectl get pv
+kubectl get pvc -n postgres-ns
+kubectl get pods -n postgres-ns
+kubectl get svc -n postgres-ns
+
+kubectl get pvc grafana-pvc -n postgres-ns -o yaml
+
+Option 1
+kubectl delete deployment grafana -n postgres-ns
+kubectl delete pvc grafana-pvc -n postgres-ns
+
+kubectl get pvc -n postgres-ns
+kubectl apply -f grafana.yaml
+
+C:\Users\p901vhs\postgress>kubectl apply -f grafana.yaml
+namespace/postgres-ns unchanged
+persistentvolume/grafana-pv unchanged
+persistentvolumeclaim/grafana-pvc created
+deployment.apps/grafana created
+service/grafana unchanged
+
+C:\Users\p901vhs\postgress>kubectl get pvc -n postgres-ns
+NAME          STATUS   VOLUME       CAPACITY   ACCESS MODES   STORAGECLASS   VOLUMEATTRIBUTESCLASS   AGE
+grafana-pvc   Bound    grafana-pv   2Gi        RWO            manual         <unset>                 21s
+
+C:\Users\p901vhs\postgress>kubectl get pv -n postgres-ns
+NAME         CAPACITY   ACCESS MODES   RECLAIM POLICY   STATUS   CLAIM                     STORAGECLASS   VOLUMEATTRIBUTESCLASS   REASON   AGE
+grafana-pv   2Gi        RWO            Retain           Bound    postgres-ns/grafana-pvc   manual         <unset>                          11m
+
+kind delete cluster --name postgres
+kind create cluster --name postgres
+kubectl get nodes
+
+C:\Users\p901vhs\postgress>kubectl get nodes
+NAME                     STATUS     ROLES           AGE   VERSION
+postgres-control-plane   NotReady   control-plane   35h   v1.33.1
+
+C:\Users\p901vhs\postgress>
+kubectl describe node postgres-control-plane
+
+C:\Users\p901vhs\postgress>kubectl get svc -n postgres-ns
+NAME      TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+grafana   NodePort   10.96.57.160   <none>        3000:32000/TCP   4m8s
+
+kubectl get events -n postgres-ns
+
+C:\Users\p901vhs\postgress>kubectl logs -f deployment/grafana -n postgres-ns
+GF_PATHS_DATA='/var/lib/grafana' is not writable.
+You may have issues with file permissions, more information here: http://docs.grafana.org/installation/docker/#migrate-to-v51-or-later
+mkdir: can't create directory '/var/lib/grafana/plugins': Permission denied
+
+C:\Users\p901vhs\postgress>
+
+C:\Users\p901vhs\postgress>kubectl get svc -n postgres-ns
+NAME      TYPE       CLUSTER-IP     EXTERNAL-IP   PORT(S)          AGE
+grafana   NodePort   10.96.57.160   <none>        3000:32000/TCP   21m
+
+C:\Users\p901vhs\postgress>kubectl get pods -n postgres-ns
+NAME                       READY   STATUS    RESTARTS   AGE
+grafana-66db6d695b-b9c7m   1/1     Running   0          95s
+
+C:\Users\p901vhs\postgress>
+
+C:\Users\p901vhs\postgress>kubectl get endpoints grafana -n postgres-ns
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME      ENDPOINTS         AGE
+grafana   10.244.0.7:3000   23m
+
+C:\Users\p901vhs\postgress>
+
+C:\Users\p901vhs\postgress>kubectl port-forward -n postgres-ns svc/grafana 3000:3000
+Forwarding from 127.0.0.1:3000 -> 3000
+Forwarding from [::1]:3000 -> 3000
+Handling connection for 3000
+Handling connection for 3000
+Handling connection for 3000
+Handling connection for 3000
+
+C:\Users\p901vhs\postgress>
+
+
+for permanent 
+
+kind create cluster --name postgres --config kind-config.yaml
+
+
+
+
+https://jira.swedbank.net/browse/MSSQL-12640
+
+Pull influxdb 
+4
+
+https://hub.docker.com/_/influxdb/ 
+
+sudo docker run -p 8086:8086 -p 8083:8083 -p 2003:2003 --name monitoring-influxdb \
+-e INFLUXDB_DB=db0 -e INFLUXDB_ADMIN_ENABLED=true \
+-e INFLUXDB_ADMIN_USER=admin -e INFLUXDB_ADMIN_PASSWORD=M0nit0ring \
+-e INFLUXDB_USER=monitoring -e INFLUXDB_USER_PASSWORD=M0nit0ring \
+-v /var/opt/influxdb:/var/lib/influxdb \
+-d influxdb:1.7.9
+
+
+docker run -d  -p 8181:8181 \-e INFLUXDB3_NODE_IDENTIFIER_PREFIX=00 -e INFLUXDB3_OBJECT_STORE=memory  influxdb:3-core
+
+
+podman run --rm -p 8181:8181   -v data:/var/lib/influxdb3/data   -v C:\Users\p901vhs\postgress\plugins:/var/lib/influxdb3/plugins   influxdb:3-core influxdb3 serve   --node-id=my-node-0   --object-store=file   --data-dir=/var/lib/influxdb3/data   --plugin-dir=/var/lib/influxdb3/plugins
+
+sudo docker run -p 8086:8086 -p 8083:8083 -p 2003:2003 --name monitoring-influxdb \
+-e INFLUXDB_DB=db0 -e INFLUXDB_ADMIN_ENABLED=true \
+-e INFLUXDB_ADMIN_USER=admin -e INFLUXDB_ADMIN_PASSWORD=M0nit0ring \
+-e INFLUXDB_USER=monitoring -e INFLUXDB_USER_PASSWORD=M0nit0ring \
+-v /var/opt/influxdb:/var/lib/influxdb \
+-d influxdb:1.7.9 
+
+
+
+
+
+
+
+podman run --rm -p 8181:8181   -v data:/var/lib/influxdb3/data   influxdb:3-core influxdb3 serve   --node-id=my-node-0   --object-store=file   --data-dir=/var/lib/influxdb3/data
+
+
+mkdir C:\InfluxDB\data
+
+podman run -d 
+ --name monitoring-influxdb 
+ -p 8086:8086 
+ -p 8083:8083 
+ -p 2003:2003 
+ -e INFLUXDB_DB=db0 
+ -e INFLUXDB_ADMIN_ENABLED=true 
+ -e INFLUXDB_ADMIN_USER=admin 
+ -e INFLUXDB_ADMIN_PASSWORD=M0nit0ring 
+ -e INFLUXDB_USER=monitoring 
+ -e INFLUXDB_USER_PASSWORD=M0nit0ring 
+ -v C:\Users\p901vhs\postgress\plugins:/var/lib/influxdb 
+ docker.io/library/influxdb:1.7.9
+ 
+ 
+ 
+ 
+ 
+ C:\Users\p901vhs\postgress>kubectl get node postgres-control-plane -o yaml | findstr -i "Ready reason message"
+    message: Kubelet stopped posting node status.
+    reason: NodeStatusUnknown
+    message: Kubelet stopped posting node status.
+    reason: NodeStatusUnknown
+    message: Kubelet stopped posting node status.
+    reason: NodeStatusUnknown
+    message: Kubelet stopped posting node status.
+    reason: NodeStatusUnknown
+    type: Ready
+

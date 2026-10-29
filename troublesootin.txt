@@ -1,0 +1,284 @@
+C:\Users\p901vhs\postgress>kind delete cluster --name postgres
+enabling experimental podman provider
+Deleting cluster "postgres" ...
+Deleted nodes: ["postgres-control-plane"]
+
+C:\Users\p901vhs\postgress>kind get clusters
+enabling experimental podman provider
+kind-cluster
+
+C:\Users\p901vhs\postgress>kind create cluster --name postgres
+enabling experimental podman provider
+Creating cluster "postgres" ...
+ • Ensuring node image (kindest/node:v1.33.1) 🖼  ...
+ ✓ Ensuring node image (kindest/node:v1.33.1) 🖼
+ • Preparing nodes 📦   ...
+ ✓ Preparing nodes 📦
+ • Writing configuration 📜  ...
+ ✓ Writing configuration 📜
+ • Starting control-plane 🕹️  ...
+ ✓ Starting control-plane 🕹️
+ • Installing CNI 🔌  ...
+ ✓ Installing CNI 🔌
+ • Installing StorageClass 💾  ...
+ ✓ Installing StorageClass 💾
+Set kubectl context to "kind-postgres"
+You can now use your cluster with:
+
+kubectl cluster-info --context kind-postgres
+
+Have a nice day! 👋
+
+C:\Users\p901vhs\postgress>kubectl get nodes
+NAME                     STATUS   ROLES           AGE   VERSION
+postgres-control-plane   Ready    control-plane   43s   v1.33.1
+
+C:\Users\p901vhs\postgress>kubectl apply -f https://raw.githubusercontent.com/metallb/metallb/v0.14.9/config/manifests/metallb-native.yaml
+namespace/metallb-system created
+customresourcedefinition.apiextensions.k8s.io/bfdprofiles.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/bgpadvertisements.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/bgppeers.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/communities.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/ipaddresspools.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/l2advertisements.metallb.io created
+customresourcedefinition.apiextensions.k8s.io/servicel2statuses.metallb.io created
+serviceaccount/controller created
+serviceaccount/speaker created
+role.rbac.authorization.k8s.io/controller created
+role.rbac.authorization.k8s.io/pod-lister created
+clusterrole.rbac.authorization.k8s.io/metallb-system:controller created
+clusterrole.rbac.authorization.k8s.io/metallb-system:speaker created
+rolebinding.rbac.authorization.k8s.io/controller created
+rolebinding.rbac.authorization.k8s.io/pod-lister created
+clusterrolebinding.rbac.authorization.k8s.io/metallb-system:controller created
+clusterrolebinding.rbac.authorization.k8s.io/metallb-system:speaker created
+configmap/metallb-excludel2 created
+secret/metallb-webhook-cert created
+service/metallb-webhook-service created
+deployment.apps/controller created
+daemonset.apps/speaker created
+validatingwebhookconfiguration.admissionregistration.k8s.io/metallb-webhook-configuration created
+
+validatingwebhookconfiguration.admissionregistration.k8s.io/metallb-webhook-configuration created
+
+C:\Users\p901vhs\postgress>kubectl get pods -n metallb-system
+NAME                         READY   STATUS    RESTARTS   AGE
+controller-bb5f47665-k2fww   1/1     Running   0          21s
+speaker-gvbvg                0/1     Running   0          21s
+
+C:\Users\p901vhs\postgress>kubectl create namespace postgres-ns
+namespace/postgres-ns created
+
+C:\Users\p901vhs\postgress>kubectl apply -f grafana.yaml
+Warning: resource namespaces/postgres-ns is missing the kubectl.kubernetes.io/last-applied-configuration annotation which is required by kubectl apply. kubectl apply should only be used on resources created declaratively by either kubectl create --save-config or kubectl apply. The missing annotation will be patched automatically.
+namespace/postgres-ns configured
+persistentvolume/grafana-pv created
+persistentvolumeclaim/grafana-pvc created
+deployment.apps/grafana created
+service/grafana created
+
+C:\Users\p901vhs\postgress>kubectl apply -f metallb-config.yaml
+Error from server (Forbidden): error when creating "metallb-config.yaml": admission webhook "ipaddresspoolvalidationwebhook.metallb.io" denied the request: resource must be created in metallb-system namespace
+Error from server (Forbidden): error when creating "metallb-config.yaml": admission webhook "l2advertisementvalidationwebhook.metallb.io" denied the request: resource must be created in metallb-system namespace
+
+C:\Users\p901vhs\postgress>kubectl apply -f metallb-config-podsubnet.yaml
+ipaddresspool.metallb.io/kind-pool created
+l2advertisement.metallb.io/kind-l2 created
+
+C:\Users\p901vhs\postgress>
+C:\Users\p901vhs\postgress>kubectl apply -f grafana.yaml
+namespace/postgres-ns unchanged
+persistentvolume/grafana-pv unchanged
+persistentvolumeclaim/grafana-pvc unchanged
+deployment.apps/grafana created
+service/grafana configured
+
+C:\Users\p901vhs\postgress>kubectl get pods -A
+NAMESPACE            NAME                                             READY   STATUS    RESTARTS   AGE
+kube-system          coredns-674b8bbfcf-9sd9d                         1/1     Running   0          6m2s
+kube-system          coredns-674b8bbfcf-zwznb                         1/1     Running   0          6m2s
+kube-system          etcd-postgres-control-plane                      1/1     Running   0          6m11s
+kube-system          kindnet-h8jrv                                    1/1     Running   0          5m51s
+kube-system          kube-apiserver-postgres-control-plane            1/1     Running   0          6m9s
+kube-system          kube-controller-manager-postgres-control-plane   1/1     Running   0          6m9s
+kube-system          kube-proxy-v4ztv                                 1/1     Running   0          6m2s
+kube-system          kube-scheduler-postgres-control-plane            1/1     Running   0          6m11s
+local-path-storage   local-path-provisioner-7dc846544d-x5wvq          1/1     Running   0          5m46s
+metallb-system       controller-bb5f47665-k2fww                       1/1     Running   0          5m19s
+metallb-system       speaker-gvbvg                                    1/1     Running   0          5m19s
+postgres-ns          grafana-9897c47b5-86plj                          0/1     Running   0          8s
+
+C:\Users\p901vhs\postgress>kubectl get svc -A
+NAMESPACE        NAME                      TYPE           CLUSTER-IP     EXTERNAL-IP   PORT(S)                  AGE
+default          kubernetes                ClusterIP      10.96.0.1      <none>        443/TCP                  6m33s
+kube-system      kube-dns                  ClusterIP      10.96.0.10     <none>        53/UDP,53/TCP,9153/TCP   6m32s
+metallb-system   metallb-webhook-service   ClusterIP      10.96.66.215   <none>        443/TCP                  5m41s
+postgres-ns      grafana                   LoadBalancer   10.96.58.17    10.89.0.200   3000:32660/TCP           4m41s
+
+C:\Users\p901vhs\postgress>
+
+
+C:\Users\p901vhs\postgress>kubectl get svc grafana -n postgres-ns
+NAME      TYPE           CLUSTER-IP    EXTERNAL-IP   PORT(S)          AGE
+grafana   LoadBalancer   10.96.58.17   10.89.0.200   3000:32660/TCP   15m
+
+C:\Users\p901vhs\postgress>kubectl get pods -n metallb-system
+NAME                         READY   STATUS    RESTARTS   AGE
+controller-bb5f47665-k2fww   1/1     Running   0          16m
+speaker-gvbvg                1/1     Running   0          16m
+
+C:\Users\p901vhs\postgress>podman network ls
+NETWORK ID    NAME             DRIVER
+6a6f48c1b233  kind             bridge
+2f259bab93aa  podman           bridge
+978815da1303  sql-grafana-net  bridge
+
+C:\Users\p901vhs\postgress>kubectl get endpoints grafana -n postgres-ns
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME      ENDPOINTS         AGE
+grafana   10.244.0.7:3000   11m
+
+C:\Users\p901vhs\postgress>
+
+C:\Users\p901vhs\postgress>podman network ls
+NETWORK ID    NAME             DRIVER
+6a6f48c1b233  kind             bridge
+2f259bab93aa  podman           bridge
+978815da1303  sql-grafana-net  bridge
+
+C:\Users\p901vhs\postgress>podman network inspect podman
+[
+     {
+          "name": "podman",
+          "id": "2f259bab93aaaaa2542ba43ef33eb990d0999ee1b9924b557b7be53c0b7a1bb9",
+          "driver": "bridge",
+          "network_interface": "podman0",
+          "created": "2026-09-26T08:22:00.843493313+02:00",
+          "subnets": [
+               {
+                    "subnet": "10.88.0.0/16",
+                    "gateway": "10.88.0.1"
+               }
+          ],
+          "ipv6_enabled": false,
+          "internal": false,
+          "dns_enabled": false,
+          "ipam_options": {
+               "driver": "host-local"
+          },
+          "containers": {}
+     }
+]
+
+C:\Users\p901vhs\postgress>kubectl get ipaddresspool -n metallb-system
+NAME        AUTO ASSIGN   AVOID BUGGY IPS   ADDRESSES
+kind-pool   true          false             ["10.89.0.200-10.89.0.250"]
+
+C:\Users\p901vhs\postgress>
+
+
+
+C:\Users\p901vhs\postgress>kubectl apply -f metallb-config.yaml
+ipaddresspool.metallb.io/kind-pool configured
+l2advertisement.metallb.io/kind-l2 configured
+
+C:\Users\p901vhs\postgress>
+
+C:\Users\p901vhs\postgress>kubectl delete svc grafana -n postgres-ns
+service "grafana" deleted
+
+C:\Users\p901vhs\postgress>kubectl apply -f grafana-service.yaml
+error: the path "grafana-service.yaml" does not exist
+
+C:\Users\p901vhs\postgress>kubectl get svc grafana -n postgres-ns -w
+Error from server (NotFound): services "grafana" not found
+
+C:\Users\p901vhs\postgress>
+
+
+C:\Users\p901vhs\postgress>kubectl get endpoints grafana -n postgres-ns
+Warning: v1 Endpoints is deprecated in v1.33+; use discovery.k8s.io/v1 EndpointSlice
+NAME      ENDPOINTS         AGE
+grafana   10.244.0.7:3000   2m9s
+
+C:\Users\p901vhs\postgress>podman network inspect podman
+[
+     {
+          "name": "podman",
+          "id": "2f259bab93aaaaa2542ba43ef33eb990d0999ee1b9924b557b7be53c0b7a1bb9",
+          "driver": "bridge",
+          "network_interface": "podman0",
+          "created": "2026-09-26T08:22:00.843493313+02:00",
+          "subnets": [
+               {
+                    "subnet": "10.88.0.0/16",
+                    "gateway": "10.88.0.1"
+               }
+          ],
+          "ipv6_enabled": false,
+          "internal": false,
+          "dns_enabled": false,
+          "ipam_options": {
+               "driver": "host-local"
+          },
+          "containers": {}
+     }
+]
+
+C:\Users\p901vhs\postgress>kubectl get ipaddresspool -n metallb-system
+NAME        AUTO ASSIGN   AVOID BUGGY IPS   ADDRESSES
+kind-pool   true          false             ["10.88.255.200-10.88.255.250"]
+
+C:\Users\p901vhs\postgress>kubectl get svc grafana -n postgres-ns
+NAME      TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)          AGE
+grafana   LoadBalancer   10.96.144.206   10.88.255.200   3000:30795/TCP   19m
+
+C:\Users\p901vhs\postgress>kubectl get svc grafana -n postgres-ns -w
+NAME      TYPE           CLUSTER-IP      EXTERNAL-IP     PORT(S)          AGE
+grafana   LoadBalancer   10.96.144.206   10.88.255.200   3000:30795/TCP   19m
+
+
+C:\Users\p901vhs\postgress>kubectl exec -it -n postgres-ns deployment/grafana -- sh
+/usr/share/grafana $ wget -qO- http://localhost:3000
+<!DOCTYPE html>
+<html lang="en-US">
+  <head>
+
+
+
+
+For MetalLB in Layer2 mode, strictARP should be enabled when kube-proxy is using IPVS. If it was set to false, MetalLB can assign an IP, but traffic to the LoadBalancer IP may not be routed correctly.
+
+After changing strictARP: true
+
+Restart kube-proxy:
+
+kubectl rollout restart daemonset kube-proxy -n kube-system
+
+C:\Users\p901vhs\postgress>kubectl get pods -n kube-system -w
+NAME                                             READY   STATUS    RESTARTS   AGE
+coredns-674b8bbfcf-9sd9d                         1/1     Running   0          52m
+coredns-674b8bbfcf-zwznb                         1/1     Running   0          52m
+etcd-postgres-control-plane                      1/1     Running   0          52m
+kindnet-h8jrv                                    1/1     Running   0          52m
+kube-apiserver-postgres-control-plane            1/1     Running   0          52m
+kube-controller-manager-postgres-control-plane   1/1     Running   0          52m
+kube-proxy-bxwbv                                 1/1     Running   0          45s
+kube-scheduler-postgres-control-plane            1/1     Running   0          52m
+
+
+Restart MetalLB components
+
+C:\Users\p901vhs\postgress>kubectl rollout restart deployment/controller -n metallb-system
+deployment.apps/controller restarted
+
+C:\Users\p901vhs\postgress>kubectl rollout restart daemonset/speaker -n metallb-system
+daemonset.apps/speaker restarted
+
+C:\Users\p901vhs\postgress>kubectl get pods -n metallb-system
+NAME                         READY   STATUS    RESTARTS   AGE
+controller-87974474f-tt57t   0/1     Running   0          12s
+controller-bb5f47665-k2fww   1/1     Running   0          52m
+speaker-98s67                0/1     Running   0          7s
+
+C:\Users\p901vhs\postgress>
