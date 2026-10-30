@@ -114,3 +114,294 @@ https://hub.docker.com/u/debezium
 
 debezium connector 
 docker pull debezium/connect-base:2.7.3.Final
+
+
+
+PostgreSQL CDC Setup
+
+CREATE PUBLICATION dbz_publication FOR ALL TABLES;
+
+CREATE USER debezium WITH PASSWORD 'debezium';
+
+GRANT CONNECT ON DATABASE mydb TO debezium;
+GRANT USAGE ON SCHEMA public TO debezium;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO debezium;
+
+postgres=# \c mydb
+You are now connected to database "mydb" as user "postgres".
+mydb=#
+mydb=#
+mydb=#
+mydb=#
+mydb=# CREATE PUBLICATION dbz_publication
+FOR ALL TABLES;
+CREATE PUBLICATION
+mydb=# select pubname from pg_publication;
+     pubname
+-----------------
+ dbz_publication
+(1 row)
+
+
+Debezium Source Connector
+cat > postgres-cdc.json <<'EOF'
+{
+  "name": "postgres-cdc",
+  "config": {
+    "transforms.unwrap.delete.handling.mode": "rewrite",
+    "transforms.unwrap.drop.tombstones": "false",
+    "name": "postgres-cdc",
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+    "transforms": "unwrap",
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "topic.prefix": "postgres",
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "debezium",
+    "database.password": "********",
+    "database.dbname": "mydb",
+    "plugin.name": "pgoutput",
+    "slot.name": "debezium_slot",
+    "publication.name": "dbz_publication",
+    "publication.autocreate.mode": "disabled"
+  }
+}
+EOF
+
+
+curl -X POST \
+-H "Content-Type: application/json" \
+--data @postgres-cdc.json \
+http://localhost:8083/connectors
+
+
+SQL Server Sink Connector
+
+
+
+cat > sqlserver-sink.json <<'EOF'
+{
+  "name": "sqlserver-sink",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+    "tasks.max": "1",
+
+    "topics.regex": "postgres.public.*",
+
+    "connection.url": "jdbc:sqlserver://him-mssql_01:1433;databaseName=himtestdb;encrypt=false;trustServerCertificate=true",
+    "connection.user": "sa",
+    "connection.password": "hello@123",
+
+    "insert.mode": "upsert",
+
+    "pk.mode": "record_key",
+    "pk.fields": "id",
+
+    "delete.enabled": "true",
+
+    "auto.create": "true",
+    "auto.evolve": "true",
+
+    "transforms": "unwrap,route",
+
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "transforms.unwrap.drop.tombstones": "true",
+    "transforms.unwrap.delete.handling.mode": "rewrite",
+
+    "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
+    "transforms.route.regex": "postgres\\.public\\.(.*)",
+    "transforms.route.replacement": "$1",
+
+    "table.name.format": "${topic}"
+  }
+}
+EOF
+
+curl -X POST \
+-H "Content-Type: application/json" \
+--data @sqlserver-sink.json \
+http://localhost:8083/connectors
+
+[kafka@connect ~]$ curl -X POST -H "Content-Type: application/json" --data @sqlserver-sink.json http://localhost:8083/connectors
+{"name":"sqlserver-sink","config":{"connector.class":"io.confluent.connect.jdbc.JdbcSinkConnector","tasks.max":"1","topics.regex":"postgres.public.*","connection.url":"jdbc:sqlserver://him-mssql_01:1433;databaseName=himtestdb;encrypt=false;trustServerCertificate=true","connection.user":"sa","connection.password":"hello@123","insert.mode":"upsert","pk.mode":"record_key","pk.fields":"id","delete.enabled":"true","auto.create":"true","auto.evolve":"true","transforms":"unwrap","transforms.unwrap.type":"io.debezium.transforms.ExtractNewRecordState","transforms.unwrap.drop.tombstones":"false","transforms.unwrap.delete.handling.mode":"rewrite","name":"sqlserver-sink"},"tasks":[],"type":"sink"}[kafka@connect ~]$ 
+
+
+
+
+Test
+
+Postgres:
+
+CREATE TABLE customers1
+(
+  id int primary key,
+  name varchar(100),
+  email varchar(100)
+);
+
+INSERT INTO customers1
+VALUES
+(1,'John','john@test.com');
+
+UPDATE customers1
+SET email='john_new@test.com'
+WHERE id=1;
+
+
+DELETE
+FROM customers1
+WHERE id=1;
+
+
+### delete not workin so removeed warp from source connector postgres-cdc-01.json and sqlserver-sink.json working 
+
+cat > postgres-cdc-01.json <<'EOF'
+{
+  "name": "postgres-cdc-01",
+  "config": {
+    "connector.class": "io.debezium.connector.postgresql.PostgresConnector",
+
+    "database.hostname": "postgres",
+    "database.port": "5432",
+    "database.user": "debezium",
+    "database.password": "debezium",
+    "database.dbname": "mydb",
+
+    "topic.prefix": "postgres",
+
+    "plugin.name": "pgoutput",
+
+    "slot.name": "debezium_slot",
+
+    "publication.name": "dbz_publication",
+    "publication.autocreate.mode": "disabled",
+
+  }
+}
+EOF
+
+
+cat > sqlserver-sink-01.json <<'EOF'
+{
+  "name": "sqlserver-sink-01",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+
+    "tasks.max": "1",
+
+    "topics.regex": "postgres.public.*",
+
+    "connection.url": "jdbc:sqlserver://him-mssql_01:1433;databaseName=himtestdb;encrypt=false;trustServerCertificate=true",
+    "connection.user": "sa",
+    "connection.password": "hello@123",
+
+    "insert.mode": "upsert",
+
+    "pk.mode": "record_key",
+    "pk.fields": "id",
+
+    "delete.enabled": "true",
+
+    "auto.create": "true",
+    "auto.evolve": "true",
+
+    "transforms": "unwrap,route",
+
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "transforms.unwrap.delete.handling.mode": "rewrite",
+    "transforms.unwrap.drop.tombstones": "true",
+
+    "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
+    "transforms.route.regex": "postgres\\.public\\.(.*)",
+    "transforms.route.replacement": "$1",
+
+    "table.name.format": "${topic}"
+  }
+}
+EOF
+
+
+
+To start clean, do the following in order.
+
+
+curl -X DELETE http://localhost:8083/connectors/sqlserver-sink
+
+curl -X DELETE http://localhost:8083/connectors/postgres-cdc
+
+Drop Kafka topics
+
+kafka-topics \
+ --bootstrap-server broker:9092 \
+ --list
+ 
+ kafka-topics \
+ --bootstrap-server broker:9092 \
+ --delete \
+ --topic postgres.public.customers1
+ 
+ kafka-topics \
+ --bootstrap-server broker:9092 \
+ --delete \
+ --topic connect-configs
+
+kafka-topics \
+ --bootstrap-server broker:9092 \
+ --delete \
+ --topic connect-offsets
+
+kafka-topics \
+ --bootstrap-server broker:9092 \
+ --delete \
+ --topic connect-status
+ 
+ [appuser@broker ~]$ history
+    1  kafka-topic --bootstrap-server broker:9092 --list
+    2  kafka-topics --bootstrap-server broker:9092 --list
+    3  kafka-topics --bootstrap-server broker:9092 --delete --topic postgres.public.customers
+    4  kafka-topics --bootstrap-server broker:9092 --delete --topic postgres.public.customers1
+    5  kafka-topics --bootstrap-server broker:9092 --delete --topic postgres.public.customers_bank01
+    6  kafka-topics --bootstrap-server broker:9092 --delete --topic docker-connect-configs
+    7  kafka-topics --bootstrap-server broker:9092 --delete --topic docker-connect-offsets
+    8  kafka-topics --bootstrap-server broker:9092 --delete --topic docker-connect-status
+    9  exit
+   10  kafka-topics --bootstrap-server broker:9092 --delete --topic docker-connect-status
+   11  kafka-topics --bootstrap-server broker:9092 --delete --topic docker-connect-offsets
+   12  kafka-topics --bootstrap-server broker:9092 --delete --topic docker-connect-offsets
+   13  kafka-topics --bootstrap-server broker:9092 --list
+   14  kafka-topics --bootstrap-server broker:9092 --delete --topic docker-connect-configs
+   15  kafka-topics --create  --topic docker-connect-configs  --partitions 1  --replication-factor 1  --config cleanup.policy=compact
+   16  kafka-topics --create  --topic docker-connect-offsets  --partitions 25  --replication-factor 1  --config cleanup.policy=compact
+   17  kafka-topics --create  --topic docker-connect-status  --partitions 5  --replication-factor 1  --config cleanup.policy=compact
+   18  kafka-topics --create  --topic docker-connect-status  --partitions 5  --replication-factor 1  --config cleanup.policy=compact  --bootstrap-server broker:9092
+   19  kafka-topics --create  --topic docker-connect-offsets  --partitions 25  --replication-factor 1  --config cleanup.policy=compact  --bootstrap-server broker:9092
+   20  kafka-topics --create  --topic docker-connect-offsets  --partitions 25  --replication-factor 1  --config cleanup.policy=compact  --bootstrap-server broker:9092
+   21  exit
+   22  history
+[appuser@broker ~]$
+
+
+ Clean PostgreSQL replication artifacts
+ 
+ 
+ DROP PUBLICATION IF EXISTS dbz_publication; 
+ 
+ SELECT slot_name
+FROM pg_replication_slots;
+
+SELECT pg_drop_replication_slot('debezium_slot');
+
+SELECT pg_terminate_backend(active_pid)
+FROM pg_replication_slots
+WHERE slot_name='debezium_slot';
+
+GRANT USAGE ON SCHEMA public TO debezium;
+
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO debezium;
+
+ALTER DEFAULT PRIVILEGES IN SCHEMA public
+GRANT SELECT ON TABLES TO debezium;
+
+CREATE PUBLICATION dbz_publication
+FOR ALL TABLES;
+
