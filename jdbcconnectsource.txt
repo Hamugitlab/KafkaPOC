@@ -622,9 +622,22 @@ podman restart connect
 
 
 
-podman exec -it postgres psql -U postgres -d mydb
+ podman run -d   --name postgres   -e POSTGRES_USER=postgres   -e POSTGRES_PASSWORD=postgres   -e POSTGRES_DB=mydb   -p 5432:5432   postgres:latest
+  
 
 SHOW wal_level;
+
+ALTER SYSTEM SET wal_level = logical;
+ALTER SYSTEM SET max_replication_slots = 10;
+ALTER SYSTEM SET max_wal_senders = 10;
+
+podman restart postgres
+
+SHOW wal_level;
+SHOW max_replication_slots;
+SHOW max_wal_senders;
+
+
 CREATE PUBLICATION dbz_publication FOR ALL TABLES;
 
 CREATE USER debezium WITH PASSWORD 'debezium';
@@ -632,6 +645,23 @@ CREATE USER debezium WITH PASSWORD 'debezium';
 GRANT CONNECT ON DATABASE mydb TO debezium;
 GRANT USAGE ON SCHEMA public TO debezium;
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO debezium;
+
+postgres=# \c mydb
+You are now connected to database "mydb" as user "postgres".
+mydb=#
+mydb=#
+mydb=#
+mydb=#
+mydb=# CREATE PUBLICATION dbz_publication
+FOR ALL TABLES;
+CREATE PUBLICATION
+mydb=# select pubname from pg_publication;
+     pubname
+-----------------
+ dbz_publication
+(1 row)
+
+podman network connect postgress_default postgres
 
 
 sqlcmd -S localhost -U sa -P "hello@123" -C
@@ -676,8 +706,7 @@ cd /tmp
 
 tar -xzf postgres.tar.gz
 
-cp -r debezium-debezium-connector-postgresql \
-  /kafka/connect/
+cp -r debezium-debezium-connector-postgresql   /kafka/connect/
   
   
   podman restart connect
