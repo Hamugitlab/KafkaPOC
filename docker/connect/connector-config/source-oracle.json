@@ -1,0 +1,22 @@
+{
+  "name": "oracle-source-connector",
+  "config": {
+    "connector.class": "io.debezium.connector.oracle.OracleConnector",
+    "tasks.max": "1",
+    "database.hostname": "oracle",
+    "database.port": "1521",
+    "database.user": "APPUSER",
+    "database.password": "AppPass_123",
+    "database.dbname": "FREE",
+    "database.server.name": "oracle",
+    "table.include.list": "APPUSER.ORDERS,APPUSER.CUSTOMERS",
+    "database.history.kafka.bootstrap.servers": "kafka:29092",
+    "database.history.kafka.topic": "dbhistory.oracle",
+    "include.schema.changes": "true",
+    "transforms": "unwrap",
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "key.converter": "org.apache.kafka.connect.storage.StringConverter",
+    "value.converter": "org.apache.kafka.connect.json.JsonConverter",
+    "value.converter.schemas.enable": "false"
+  }
+}
