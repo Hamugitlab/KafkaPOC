@@ -1,0 +1,292 @@
+podman run --name oracle26ai -p 1521:1521 -e ORACLE_PWD="hellobank!123#" -e ENABLE_ARCHIVELOG=true -e ENABLE_FORCE_LOGGING=true container-registry.oracle.com/database/free:latest
+
+
+
+podman pull ghcr.io/oracle/adb-free:latest-23ai
+
+
+podman run --name oracle23ai -p 1522:1522 -e ORACLE_PWD="hellobank!123#" -e ENABLE_ARCHIVELOG=true -e ENABLE_FORCE_LOGGING=true ghcr.io/oracle/adb-free:latest-23ai
+
+podman run -d --name oracle19c -p 1522:1522 -e ORACLE_PWD="hellobank!123#" -e ENABLE_ARCHIVELOG=true -e ENABLE_FORCE_LOGGING=true himdockerrepo/oracle-19c-image-v1.1:latest
+
+podman network connect postgress_default oracle19c
+
+SHUTDOWN IMMEDIATE;
+STARTUP MOUNT;
+ALTER DATABASE ARCHIVELOG;
+ALTER DATABASE OPEN;
+
+ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
+
+
+[oracle@8e0d225d7c49 samples]$ cat /opt/oracle/product/19c/dbhome_1/network/admin/listener.ora
+LISTENER = 
+(DESCRIPTION_LIST = 
+  (DESCRIPTION = 
+    (ADDRESS = (PROTOCOL = IPC)(KEY = EXTPROC1)) 
+    (ADDRESS = (PROTOCOL = TCP)(HOST = 0.0.0.0)(PORT = 1522)) 
+  ) 
+) 
+
+SID_LIST_LISTENER=
+   (SID_LIST=
+       (SID_DESC=
+          (SID_NAME=ORACL)
+          (ORACLE_HOME=/opt/oracle/product/19c/dbhome_1)
+        )
+       )
+
+DEDICATED_THROUGH_BROKER_LISTENER=ON
+DIAG_ADR_ENABLED = off
+
+https://container-registry.oracle.com/ords/f?p=113:4:106773306577296:::4:P4_REPOSITORY,AI_R
+
+
+EPOSITORY,AI_REPOSITORY_NAME,P4_REPOSITORY_NAME,P4_EULA_ID,P4_BUSINESS_AREA_ID:1863,1863,Oracle%20Database%20Free,Oracle%20Database%20Free,1,0&cs=3feaiLEwr4Mr5hCbgKcMb6tS3pok31JdtRRWrndCMoU_8szljKM33_m0LaZZEvLR1YF7u5ypBBuXs9G7Su16EvQ
+
+
+
+Oracle Database
+      │
+      │ Redo Logs
+      ▼
+Debezium Oracle Connector
+      ▼
+Kafka
+      ▼
+JDBC Sink Connector
+      ▼
+SQL Server
+
+
+
+alter session set container=cdb$root
+
+create user c##debezium IDENTIFIED BY "debezium";
+
+
+ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
+
+
+select *  from v$database
+
+
+alter session set container=FREEPDB1
+
+
+CREATE USER debezium IDENTIFIED BY "debezium";
+
+GRANT CONNECT TO debezium;
+GRANT CREATE SESSION TO debezium;
+
+GRANT SELECT ANY TABLE TO debezium;
+
+GRANT SELECT_CATALOG_ROLE TO debezium;
+
+GRANT EXECUTE_CATALOG_ROLE TO debezium;
+
+
+GRANT LOCK ANY TABLE TO DEBEZIUM;
+grant dba to DEBEZIUM
+
+
+[kafka@connect ~]$ getent hosts oracle19c
+10.89.2.27      oracle19c.dns.podman
+
+Install the Oracle  connector
+curl -L -o oracle.tar.gz \
+https://repo1.maven.org/maven2/io/debezium/debezium-connector-oracle/2.7.3.Final/debezium-connector-oracle-2.7.3.Final-plugin.tar.gz
+
+
+https://repo1.maven.org/maven2/io/debezium/debezium-connector-oracle/3.7.0.Final/
+
+
+
+[kafka@connect tmp]$ cd /kafka/connect/
+
+[kafka@connect connect]$ tar -xzf debezium-connector-oracle-2.7.3.Final-plugin.tar.gz
+
+  podman restart connect
+  
+  curl -s http://localhost:8083/connector-plugins
+  
+  
+C:\Users\p901vhs\postgress\Kafka\connect>podman exec -it connect bash
+[kafka@connect ~]$  curl -s http://localhost:8083/connector-plugins
+[{"class":"io.confluent.connect.jdbc.JdbcSinkConnector","type":"sink","version":"10.9.9"},{"class":"io.confluent.connect.jdbc.JdbcSourceConnector","type":"source","version":"10.9.9"},{"class":"io.debezium.connector.oracle.OracleConnector","type":"source","version":"2.7.3.Final"},{"class":"io.debezium.connector.postgresql.PostgresConnector","type":"source","version":"3.2.6.Final"},{"class":"org.apache.kafka.connect.mirror.MirrorCheckpointConnector","type":"source","version":"3.7.0"},{"class":"org.apache.kafka.connect.mirror.MirrorHeartbeatConnector","type":"source","version":"3.7.0"},{"class":"org.apache.kafka.connect.mirror.MirrorSourceConnector","type":"source","version":"3.7.0"}][kafka@connect ~]$
+
+
+[kafka@connect ~]$ getent hosts oracle26ai
+10.89.2.22      oracle26ai.dns.podman
+[kafka@connect ~]$ bash -c 'echo > /dev/tcp/oracle26ai/1521 && echo OK'
+OK
+[kafka@con
+
+ 
+Validate connector configuration
+
+curl -X PUT \
+  -H "Content-Type: application/json" \
+  --data @oracle-cdc.json \
+  http://localhost:8083/connector-plugins/io.debezium.connector.oracle.OracleConnector/config/validate
+  
+  
+
+
+cat > oracle-cdc.json <<'EOF' 
+{
+  "name": "oracle-cdc",
+  "config": {
+    "connector.class": "io.debezium.connector.oracle.OracleConnector",
+
+    "database.hostname": "oracle19c",
+    "database.port": "1522",
+
+    "database.user": "debezium",
+    "database.password": "debezium",
+
+    "database.dbname": "ORACL",
+
+    "topic.prefix": "oracle",
+
+    "schema.include.list": "HR",
+
+    "schema.history.internal.kafka.bootstrap.servers": "broker:29092",
+    "schema.history.internal.kafka.topic": "schema-changes.oracle",
+
+    "snapshot.mode": "initial",
+    "log.mining.strategy": "online_catalog"
+  }
+}
+EOF
+
+[kafka@connect ~]$ curl -X POST   -H "Content-Type: application/json"   --data @oracle-cdc.json    http://localhost:8083/connectors
+{"name":"oracle-cdc","config":{"connector.class":"io.debezium.connector.oracle.OracleConnector","database.hostname":"oracle19c","database.port":"1522","database.user":"debezium","database.password":"debezium","database.dbname":"ORACL","topic.prefix":"oracle","schema.include.list":"HR","schema.history.internal.kafka.bootstrap.servers":"broker:29092","schema.history.internal.kafka.topic":"schema-changes.oracle","snapshot.mode":"initial","log.mining.strategy":"online_catalog","name":"oracle-cdc"},"tasks":[],"type":"source"}[kafka@connect ~]$
+
+
+cat > oracle-sqlserver-sink-01.json <<'EOF'
+{
+  "name": "oracle-sqlserver-sink-01",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+
+    "tasks.max": "1",
+
+    "topics.regex": "oracle\\..*",
+
+    "connection.url": "jdbc:sqlserver://him-mssql_01:1433;databaseName=oraclehr;encrypt=false;trustServerCertificate=true",
+    "connection.user": "sa",
+    "connection.password": "hello@123",
+
+    "insert.mode": "upsert",
+
+    "pk.mode": "record_key",
+
+    "delete.enabled": "true",
+
+    "auto.create": "true",
+    "auto.evolve": "true",
+
+    "transforms": "unwrap,route",
+
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "transforms.unwrap.delete.handling.mode": "rewrite",
+    "transforms.unwrap.drop.tombstones": "true",
+
+    "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
+    "transforms.route.regex": "oracle\\.(.*)\\.(.*)",
+    "transforms.route.replacement": "$2",
+
+    "table.name.format": "${topic}"
+  }
+}
+EOF
+
+
+[kafka@connect ~]$ curl -X POST   -H "Content-Type: application/json"   --data @oracle-sqlserver-sink-01.json    http://localhost:8083/connectors
+{"name":"oracle-sqlserver-sink-01","config":{"connector.class":"io.confluent.connect.jdbc.JdbcSinkConnector","tasks.max":"1","topics.regex":"oracle\\..*","connection.url":"jdbc:sqlserver://him-mssql_01:1433;databaseName=oraclehr;encrypt=false;trustServerCertificate=true","connection.user":"sa","connection.password":"hello@123","insert.mode":"upsert","pk.mode":"record_key","delete.enabled":"true","auto.create":"true","auto.evolve":"true","transforms":"unwrap,route","transforms.unwrap.type":"io.debezium.transforms.ExtractNewRecordState","transforms.unwrap.delete.handling.mode":"rewrite","transforms.unwrap.drop.tombstones":"true","transforms.route.type":"org.apache.kafka.connect.transforms.RegexRouter","transforms.route.regex":"oracle\\.(.*)\\.(.*)","transforms.route.replacement":"$2","table.name.format":"${topic}","name":"oracle-sqlserver-sink-01"},"tasks":[],"type":"sink"}[kafka@connect ~]$
+
+
+######################## After Tabl Stracture 
+
+
+
+ 
+
+
+cat > oracle-cdc.json <<'EOF' 
+{
+  "name": "oracle-cdc",
+  "config": {
+    "connector.class": "io.debezium.connector.oracle.OracleConnector",
+
+    "database.hostname": "oracle19c",
+    "database.port": "1522",
+
+    "database.user": "debezium",
+    "database.password": "debezium",
+
+    "database.dbname": "ORACL",
+
+    "topic.prefix": "oraclehr",
+
+    "schema.include.list": "HR",
+
+    "schema.history.internal.kafka.bootstrap.servers": "broker:29092",
+    "schema.history.internal.kafka.topic": "schema-changes.oracle",
+
+    "snapshot.mode": "initial",
+    "log.mining.strategy": "online_catalog"
+  }
+}
+EOF
+
+[kafka@connect ~]$ curl -X POST   -H "Content-Type: application/json"   --data @oracle-cdc.json    http://localhost:8083/connectors
+{"name":"oracle-cdc","config":{"connector.class":"io.debezium.connector.oracle.OracleConnector","database.hostname":"oracle19c","database.port":"1522","database.user":"debezium","database.password":"debezium","database.dbname":"ORACL","topic.prefix":"oracle","schema.include.list":"HR","schema.history.internal.kafka.bootstrap.servers":"broker:29092","schema.history.internal.kafka.topic":"schema-changes.oracle","snapshot.mode":"initial","log.mining.strategy":"online_catalog","name":"oracle-cdc"},"tasks":[],"type":"source"}[kafka@connect ~]$
+
+
+cat > oracle-sqlserver-sink-01.json <<'EOF'
+{
+  "name": "oracle-sqlserver-sink-01",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+
+    "tasks.max": "1",
+
+    "topics.regex": "oracle\\..*",
+
+    "connection.url": "jdbc:sqlserver://him-mssql_01:1433;databaseName=oraclehr;encrypt=false;trustServerCertificate=true",
+    "connection.user": "sa",
+    "connection.password": "hello@123",
+
+    "insert.mode": "upsert",
+
+    "pk.mode": "record_value",
+
+    "delete.enabled": "true",
+
+    "auto.create": "true",
+    "auto.evolve": "true",
+
+    "transforms": "unwrap,route",
+
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "transforms.unwrap.delete.handling.mode": "rewrite",
+    "transforms.unwrap.drop.tombstones": "true",
+
+    "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
+    "transforms.route.regex": "oraclehr\\.HR\\..*",
+    "transforms.route.replacement": "$2",
+
+    "table.name.format": "${topic}"
+  }
+}
+EOF
+
+
+ for t in $(kafka-topics --bootstrap-server broker:9092 --list | grep '^oracle'); do kafka-topics --bootstrap-server broker:9092 --delete --topic "$t"; done
+ kafka-topics --bootstrap-server broker:9092 --list | grep '^oracle'
+ 
+ 
+ 
+ 
