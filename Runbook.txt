@@ -1,11 +1,3 @@
-\\fspa.myntet.se\fileroot\IT-Gem\IT Service\PSPPP\PG018 DB-teknik\MSSQL\Script         \\nas-se07-mz.fspa.myntet.se\fs70308\MSSQL\Script
-
-
-"\\spnt190.fspa.myntet.se\AllmdataIT\IT Service\PSPPP\PG018 DB-teknik\MSSQL"         "\\nas-se07-mz.fspa.myntet.se\fs70308\MSSQL" `
-"\\fspas01fs011\inst$\_G018 SQL\Inst"                                                "\\nas-se07-mz.fspa.myntet.se\fs70308\Inst" 
-
-\\fspa.myntet.se\fileroot\IT-Gem\IT Service\PSPPP\PG018 DB-teknik\MSSQL\Script
-
 
 Initialization failed. Please check the error below and try again
 Error: Command execution failed with exit code 125
