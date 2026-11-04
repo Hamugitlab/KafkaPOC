@@ -64,8 +64,20 @@ alter session set container=cdb$root
 
 create user c##debezium IDENTIFIED BY "debezium";
 
+SQL> alter system set log_archive_dest_1 = 'location=/opt/oracle/product/19c/dbhome_1/dbs/arch' scope=both;
 
+System altered.
 ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
+
+
+ALTER DATABASE ADD SUPPLEMENTAL LOG DATA (PRIMARY KEY) COLUMNS;
+
+
+
+ALTER DATABASE ADD SUPPLEMENTAL LOG DATA (UNIQUE INDEX) COLUMNS;
+
+SELECT supplemental_log_data_min, supplemental_log_data_pk, supplemental_log_data_ui 
+FROM v$database;
 
 
 select *  from v$database
@@ -346,25 +358,21 @@ Use Debezium + Kafka only for ongoing changes, not initial load.
 
 Validate each table by comparing row counts Oracle vs SQL Server.
 
-SQL> alter system set log_archive_dest_1 = 'location=/opt/oracle/product/19c/dbhome_1/dbs/arch' scope=both;
-
-System altered.
 
 
-cat > oracle-source-hr-01.json <<'EOF' 
+cat > oracle-source-hr-08.json << 'EOF'
 {
-  "name": "oracle-source-hr-01",
+  "name": "oracle-source-hr-08",
   "config": {
     "connector.class": "io.debezium.connector.oracle.OracleConnector",
 
     "database.hostname": "himorcl",
     "database.port": "1521",
-
     "database.user": "debezium",
     "database.password": "debezium",
 
     "database.dbname": "ORACL",
-
+   
     "topic.prefix": "oracle",
 
     "schema.history.internal.kafka.bootstrap.servers": "broker:29092",
@@ -377,50 +385,52 @@ cat > oracle-source-hr-01.json <<'EOF'
     "decimal.handling.mode": "double",
     "binary.handling.mode": "base64",
     "time.precision.mode": "adaptive",
+
     "tombstones.on.delete": "false",
     "include.schema.changes": "false",
 
     "log.mining.strategy": "online_catalog",
-    "log.mining.continuous.mine": "FALSE",
-    "log.mining.sleep.time.default": "5000",
-    "log.mining.batch.size.default": "1000",
-	
-	   "log.mining.archive.log.only.mode": "false",
+    "log.mining.continuous.mine": "false",
+
+    "log.mining.archive.log.only.mode": "false",
     "log.mining.archive.destination.name": "LOG_ARCHIVE_DEST_1",
     "log.mining.start.scn": "-1",
+
+    "log.mining.sleep.time.default": "5000",
+    "log.mining.batch.size.default": "1000",
+	"transforms": "unwrap",
+	"transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+	"transforms.unwrap.delete.handling.mode": "rewrite",	
+	"transforms.unwrap.drop.tombstones": "false",
+	"tombstones.on.delete": "true",
+
 
     "event.processing.failure.handling.mode": "warn"
   }
 }
 EOF
 
+curl -X POST -H "Content-Type: application/json" \
+  --data @oracle-source-hr-08.json \
+  http://localhost:8083/connectors
 
-if logminer is not wokring add 
+echo "=== RECREATE CLEAN SINK CONNECTOR ==="
 
-
-
-	
-	
-curl -X POST   -H "Content-Type: application/json"   --data @oracle-source-hr-01.json     http://localhost:8083/connectors
-
-
-cat > oracle-sqlserver-sink-01.json <<'EOF' 
+rm oracle-sqlserver-sink-02.json
+cat > oracle-sqlserver-sink-02.json << 'EOF'
 {
-  "name": "oracle-sqlserver-sink-01",
+  "name": "oracle-sqlserver-sink-02",
   "config": {
     "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
     "tasks.max": "1",
 
     "topics": "oracle.HR.EMPLOYEES,oracle.HR.DEPARTMENTS,oracle.HR.JOBS,oracle.HR.COUNTRIES,oracle.HR.LOCATIONS,oracle.HR.REGIONS,oracle.HR.JOB_HISTORY",
 
-    "transforms": "unwrap, dropDelete, route",
+    "transforms": "unwrap,route",
 
     "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
     "transforms.unwrap.delete.handling.mode": "rewrite",
-    "transforms.unwrap.drop.tombstones": "true",
-
-    "transforms.dropDelete.type": "org.apache.kafka.connect.transforms.ReplaceField$Value",
-    "transforms.dropDelete.blacklist": "__deleted",
+    "transforms.unwrap.drop.tombstones": "false",
 
     "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
     "transforms.route.regex": "oracle\\.(.*)\\.(.*)",
@@ -432,17 +442,21 @@ cat > oracle-sqlserver-sink-01.json <<'EOF'
 
     "insert.mode": "upsert",
     "delete.enabled": "true",
-    "table.name.format": "${topic}",
     "pk.mode": "record_key",
+    "table.name.format": "${topic}",
+
     "auto.create": "true",
     "auto.evolve": "true"
   }
 }
 EOF
 
+curl -X POST -H "Content-Type: application/json" \
+  --data @oracle-sqlserver-sink-02.json \
+  http://localhost:8083/connectors
+
+echo "=== RESET COMPLETE ==="
 
 
 
-
-curl -X POST   -H "Content-Type: application/json"   --data @oracle-sqlserver-sink-01.json    http://localhost:8083/connectors
-
+https://docs.confluent.io/kafka-connectors/oracle-cdc/current/examples.html
