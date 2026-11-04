@@ -1,0 +1,40 @@
+podman run -d --name oracle19c -p 1522:1522 -e ORACLE_PWD="hellobank!123#" -e ENABLE_ARCHIVELOG=true -e ENABLE_FORCE_LOGGING=true himdockerrepo/oracle-19c-image-v1.1:latest
+
+podman network connect postgress_default oracle19c
+
+SHUTDOWN IMMEDIATE;
+STARTUP MOUNT;
+ALTER DATABASE ARCHIVELOG;
+ALTER DATABASE OPEN;
+
+alter system set log_archive_dest_1 = 'location=/opt/oracle/product/19c/dbhome_1/dbs/arch' scope=both;
+
+ALTER DATABASE ADD SUPPLEMENTAL LOG DATA;
+
+
+ALTER DATABASE ADD SUPPLEMENTAL LOG DATA (PRIMARY KEY) COLUMNS;
+
+
+
+ALTER DATABASE ADD SUPPLEMENTAL LOG DATA (UNIQUE INDEX) COLUMNS;
+
+SELECT supplemental_log_data_min, supplemental_log_data_pk, supplemental_log_data_ui 
+FROM v$database;
+
+
+CREATE USER debezium IDENTIFIED BY "debezium";
+
+GRANT CONNECT TO debezium;
+GRANT CREATE SESSION TO debezium;
+
+GRANT SELECT ANY TABLE TO debezium;
+
+GRANT SELECT_CATALOG_ROLE TO debezium;
+
+GRANT EXECUTE_CATALOG_ROLE TO debezium;
+
+
+GRANT LOCK ANY TABLE TO DEBEZIUM;
+grant dba to DEBEZIUM
+
+
