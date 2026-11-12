@@ -105,6 +105,16 @@ grant dba to DEBEZIUM
 [kafka@connect ~]$ getent hosts oracle19c
 10.89.2.27      oracle19c.dns.podman
 
+
+Shell
+curl -L -o jdbc.zip \
+https://api.hub.confluent.io/api/plugins/confluentinc/kafka-connect-jdbc/versions/10.9.9/archive
+Shell
+unzip jdbc.zip
+
+
+
+
 Install the Oracle  connector
 curl -L -o oracle.tar.gz \
 https://repo1.maven.org/maven2/io/debezium/debezium-connector-oracle/2.7.3.Final/debezium-connector-oracle-2.7.3.Final-plugin.tar.gz
@@ -145,9 +155,9 @@ curl -X PUT \
   
 
 
-cat > oracle-source-hr-08.json << 'EOF'
+cat > oracle-source-hr-09.json << 'EOF'
 {
-  "name": "oracle-source-hr-08",
+  "name": "oracle-source-hr-09",
   "config": {
     "connector.class": "io.debezium.connector.oracle.OracleConnector",
 
@@ -196,7 +206,7 @@ cat > oracle-source-hr-08.json << 'EOF'
 EOF
 
 curl -X POST -H "Content-Type: application/json" \
-  --data @oracle-source-hr-08.json \
+  --data @oracle-source-hr-09.json \
   http://localhost:8083/connectors
 
 echo "=== RECREATE CLEAN SINK CONNECTOR ==="

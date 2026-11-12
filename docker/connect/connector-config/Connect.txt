@@ -116,3 +116,103 @@ echo "=== RESET COMPLETE ==="
 
 
 https://docs.confluent.io/kafka-connectors/oracle-cdc/current/examples.html
+
+
+For Schema 
+
+cat > oracle-source-hr-08.json << 'EOF'
+{
+  "name": "oracle-source-hr-08",
+  "config": {
+    "connector.class": "io.debezium.connector.oracle.OracleConnector",
+
+    "database.hostname": "himorcl",
+    "database.port": "1521",
+    "database.user": "debezium",
+    "database.password": "debezium",
+
+    "database.dbname": "ORACL",
+
+    "topic.prefix": "oracle",
+
+    "schema.history.internal.kafka.bootstrap.servers": "broker:29092",
+    "schema.history.internal.kafka.topic": "schema-changes.oracle",
+
+    "schema.include.list": "HR",
+
+    "snapshot.mode": "initial",
+
+    "decimal.handling.mode": "double",
+    "binary.handling.mode": "base64",
+    "time.precision.mode": "adaptive",
+
+    "include.schema.changes": "false",
+
+    "log.mining.strategy": "online_catalog",
+    "log.mining.continuous.mine": "false",
+
+    "log.mining.archive.log.only.mode": "false",
+    "log.mining.archive.destination.name": "LOG_ARCHIVE_DEST_1",
+    "log.mining.start.scn": "-1",
+
+    "log.mining.sleep.time.default": "5000",
+    "log.mining.batch.size.default": "1000",
+
+    "transforms": "unwrap",
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "transforms.unwrap.delete.handling.mode": "rewrite",
+    "transforms.unwrap.drop.tombstones": "false",
+
+    "tombstones.on.delete": "true",
+
+    "event.processing.failure.handling.mode": "warn"
+  }
+}
+EOF
+
+curl -X POST -H "Content-Type: application/json" \
+  --data @oracle-source-hr-08.json \
+  http://localhost:8083/connectors
+
+
+cat > oracle-sqlserver-sink-02.json << 'EOF'
+{
+  "name": "oracle-sqlserver-sink-02",
+  "config": {
+    "connector.class": "io.confluent.connect.jdbc.JdbcSinkConnector",
+    "tasks.max": "1",
+
+    "topics.regex": "oracle\\.HR\\..*",
+
+    "transforms": "unwrap,route",
+
+    "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState",
+    "transforms.unwrap.delete.handling.mode": "rewrite",
+    "transforms.unwrap.drop.tombstones": "false",
+
+    "transforms.route.type": "org.apache.kafka.connect.transforms.RegexRouter",
+    "transforms.route.regex": "oracle\\.HR\\.(.*)",
+    "transforms.route.replacement": "$1",
+
+    "connection.url": "jdbc:sqlserver://him-mssql_01:1433;databaseName=oraclehr;encrypt=false;trustServerCertificate=true",
+    "connection.user": "sa",
+    "connection.password": "hello@123",
+
+    "insert.mode": "upsert",
+    "delete.enabled": "true",
+
+    "pk.mode": "record_key",
+
+    "auto.create": "true",
+    "auto.evolve": "true",
+
+    "table.name.format": "${topic}",
+
+    "quote.sql.identifiers": "never"
+  }
+}
+EOF
+
+curl -X POST -H "Content-Type: application/json" \
+  --data @oracle-sqlserver-sink-02.json \
+  http://localhost:8083/connectors
